@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "微光咨询日记",
+  "navigationBarBackgroundColor": "#7c3aed",
+  "navigationBarTextStyle": "white",
+  "backgroundColor": "#f5f7fa",
+  "usingComponents": {
+    "ec-canvas": "/components/ec-canvas/ec-canvas"
+  }
+}

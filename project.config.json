@@ -1,0 +1,44 @@
+{
+  "description": "项目配置文件",
+  "miniprogramRoot": "测试/",
+  "cloudfunctionRoot": "cloudfunctions/",
+  "compileType": "miniprogram",
+  "setting": {
+    "packNpmManually": true,
+    "packNpmRelationList": [
+      {
+        "packageJsonPath": "./package.json",
+        "miniprogramNpmDistDir": "./测试/"
+      }
+    ],
+    "es6": true,
+    "enhance": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    },
+    "postcss": false,
+    "compileWorklet": false,
+    "minified": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true
+  },
+  "appid": "wx54fafce16e256a4d",
+  "projectname": "微光咨询日记",
+  "libVersion": "3.15.2",
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "editorSetting": {}
+}

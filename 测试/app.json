@@ -1,0 +1,11 @@
+{
+  "pages": [
+    "pages/diary/diary",
+    "utils/diary",
+    "pages/settings/settings",
+    "pages/list/list"
+  ],
+  "window": {
+    "navigationBarTitleText": "微光日记"
+  }
+}

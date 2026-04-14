@@ -1,0 +1,24 @@
+<!-- pages/settings/settings.wxml -->
+<view class="settings-page">
+  <view class="setting-item">
+    <view class="setting-info">
+      <text class="title">云端同步</text>
+      <text class="desc">开启后，日记将自动备份到云端，可在多设备间同步</text>
+    </view>
+    <switch 
+      checked="{{cloudSync}}" 
+      bindchange="onCloudSyncChange"
+      color="#07C160"
+    />
+  </view>
+  
+  <view class="privacy-note" wx:if="{{!cloudSync}}">
+    <text class="note-icon">🔒</text>
+    <text class="note-text">您的日记仅保存在本设备，其他人无法访问</text>
+  </view>
+  
+  <view class="privacy-note" wx:else>
+    <text class="note-icon">☁️</text>
+    <text class="note-text">云端同步已开启，数据将加密存储</text>
+  </view>
+</view>

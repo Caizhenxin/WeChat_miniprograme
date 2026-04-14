@@ -1,0 +1,66 @@
+<!-- pages/diary/diary.wxml -->
+<view class="diary-page">
+  
+  <!-- 日记内容输入区域 -->
+  <view class="input-section">
+    <textarea 
+      class="diary-input"
+      placeholder="写下你的日记...&#10;分享今天的想法、感受和经历"
+      value="{{content}}"
+      bindinput="onInputContent"
+      auto-height
+      maxlength="2000"
+    />
+    <view class="input-footer">
+      <text class="word-count">{{content.length}}/2000</text>
+      <button class="clear-btn" size="mini" bindtap="onClearContent" wx:if="{{content}}">清空</button>
+    </view>
+  </view>
+  
+  <!-- 分析按钮 -->
+  <button class="analyze-btn" bindtap="onAnalyze" disabled="{{isAnalyzing}}">
+    {{isAnalyzing ? '分析中...' : '🔍 分析日记'}}
+  </button>
+  
+  <!-- 分析结果展示区域 -->
+  <block wx:if="{{actionData.counselingType}}">
+    <!-- 雷达图区域 -->
+   <!-- 正确的写法 -->
+<view class="radar-section" wx:if="{{showRadar}}">
+  <canvas canvas-id="radarCanvas" id="radarCanvas" class="radar-chart" style="width:100%; height:400px;"></canvas>
+</view>
+
+<view class="emotion-scores">
+  <view class="section-title">📈 情绪分数</view>
+  <view class="score-list">
+    <view class="score-item" wx:for="{{actionData.emotionsList}}" wx:key="index">
+      <text class="emotion-name">{{item.name}}</text>
+      <text class="emotion-score">{{item.score}}</text>
+    </view>
+  </view>
+</view>
+    
+    <!-- 咨询流派回应 -->
+    <view class="counseling-section">
+      <view class="counseling-header">
+        <text class="counseling-icon">💬</text>
+        <text class="counseling-title">{{actionData.counselingType}} · {{actionData.counselingDesc}}</text>
+      </view>
+      <view class="counseling-response">
+        <text>{{actionData.counselingResponse}}</text>
+      </view>
+    </view>
+  </block>
+  
+  <!-- 无分析结果时的提示 -->
+  <view class="no-result" wx:elif="{{!isAnalyzing && content}}">
+    <text class="no-result-icon">🔍</text>
+    <text class="no-result-text">点击上方按钮分析你的日记</text>
+  </view>
+  
+  <!-- 保存按钮 -->
+  <button class="save-btn" bindtap="onSaveDiary" disabled="{{isSaving || !content}}">
+    {{isSaving ? '保存中...' : '💾 保存日记'}}
+  </button>
+  
+</view>
