@@ -1,5 +1,6 @@
 {
   "pages": [
+    "pages/index/index",
     "pages/diary/diary",
     "utils/diary",
     "pages/settings/settings",

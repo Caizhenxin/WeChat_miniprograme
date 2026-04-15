@@ -1,7 +1,65 @@
 <!--index.wxml-->
-<navigation-bar title="Weixin" back="{{false}}" color="black" background="#FFF"></navigation-bar>
-<scroll-view class="scrollarea" scroll-y type="list">
-  <view class="container">
-    Weixin
-  </view>
-</scroll-view>
+<view class="page">
+  <!-- 顶部导航栏 -->
+  <navigation-bar title="微光日记" back="{{false}}" color="black" background="#FFF"></navigation-bar>
+  
+  <!-- 主要内容 -->
+  <scroll-view class="scroll-area" scroll-y>
+    <view class="container">
+      <!-- 标题区域 -->
+      <view class="header">
+        <image class="logo" src="/images/logo.png" mode="aspectFit"></image>
+        <view class="title">
+          <text class="main-title">微光日记</text>
+          <text class="subtitle">Glimmer Journal</text>
+        </view>
+      </view>
+      
+      <!-- 欢迎描述 -->
+      <view class="welcome-desc">
+        <text class="desc-text">
+          用生活记录作为入口，<br/>
+          用心理流派作为理解框架，<br/>
+          用5分钟微行动作为出口。
+        </text>
+      </view>
+      
+      <!-- 特色功能卡片 -->
+      <view class="features">
+        <view class="feature-card">
+          <image class="feature-icon" src="/images/feature1.png" mode="aspectFit"></image>
+          <view class="feature-content">
+            <text class="feature-title">多流派解读</text>
+            <text class="feature-desc">从CBT、ACT、积极心理学等多个视角理解你的情绪</text>
+          </view>
+        </view>
+        
+        <view class="feature-card">
+          <image class="feature-icon" src="/images/feature2.png" mode="aspectFit"></image>
+          <view class="feature-content">
+            <text class="feature-title">5分钟微行动</text>
+            <text class="feature-desc">每种流派配以可立即执行的小行动，温和促进改变</text>
+          </view>
+        </view>
+        
+        <view class="feature-card">
+          <image class="feature-icon" src="/images/feature3.png" mode="aspectFit"></image>
+          <view class="feature-content">
+            <text class="feature-title">雷达图可视化</text>
+            <text class="feature-desc">直观展示十种情绪维度的分布，洞察内心状态</text>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 开始按钮 -->
+      <view class="start-btn-container">
+        <button class="start-btn" bindtap="goToDiary">开始记录</button>
+      </view>
+      
+      <!-- 底部提示 -->
+      <view class="footer-tip">
+        <text class="tip-text">温柔陪伴，不定义你</text>
+      </view>
+    </view>
+  </scroll-view>
+</view>

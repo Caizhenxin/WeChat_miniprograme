@@ -1,2 +1,8 @@
 // index.js
-Page({})
+Page({
+  goToDiary() {
+    wx.navigateTo({
+      url: '/pages/diary/diary'
+    })
+  }
+})
