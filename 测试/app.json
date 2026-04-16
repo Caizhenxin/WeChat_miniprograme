@@ -4,7 +4,8 @@
     "pages/diary/diary",
     "utils/diary",
     "pages/settings/settings",
-    "pages/list/list"
+    "pages/list/list",
+    "pages/profile/profile"
   ],
   "window": {
     "navigationBarTitleText": "微光日记"

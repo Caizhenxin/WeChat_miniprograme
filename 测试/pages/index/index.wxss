@@ -142,3 +142,22 @@ page {
   color: #9ca3af;
   font-size: 24rpx;
 }
+
+/* 个人中心按钮 */
+.profile-btn {
+  position: fixed;
+  top: 20rpx;
+  right: 30rpx;
+  width: 70rpx;
+  height: 70rpx;
+  background-color: white;
+  border-radius: 35rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+.profile-icon {
+  font-size: 36rpx;
+}

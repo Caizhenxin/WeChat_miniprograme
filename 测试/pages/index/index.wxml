@@ -2,7 +2,12 @@
 <view class="page">
   <!-- 顶部导航栏 -->
   <navigation-bar title="微光日记" back="{{false}}" color="black" background="#FFF"></navigation-bar>
-  
+
+  <!-- 个人中心按钮 -->
+  <view class="profile-btn" bindtap="goToProfile">
+    <text class="profile-icon">👤</text>
+  </view>
+
   <!-- 主要内容 -->
   <scroll-view class="scroll-area" scroll-y>
     <view class="container">
@@ -14,7 +19,7 @@
           <text class="subtitle">Glimmer Journal</text>
         </view>
       </view>
-      
+
       <!-- 欢迎描述 -->
       <view class="welcome-desc">
         <text class="desc-text">
@@ -23,7 +28,7 @@
           用5分钟微行动作为出口。
         </text>
       </view>
-      
+
       <!-- 特色功能卡片 -->
       <view class="features">
         <view class="feature-card">
@@ -33,7 +38,7 @@
             <text class="feature-desc">从CBT、ACT、积极心理学等多个视角理解你的情绪</text>
           </view>
         </view>
-        
+
         <view class="feature-card">
           <image class="feature-icon" src="/images/feature2.png" mode="aspectFit"></image>
           <view class="feature-content">
@@ -41,7 +46,7 @@
             <text class="feature-desc">每种流派配以可立即执行的小行动，温和促进改变</text>
           </view>
         </view>
-        
+
         <view class="feature-card">
           <image class="feature-icon" src="/images/feature3.png" mode="aspectFit"></image>
           <view class="feature-content">
@@ -50,12 +55,12 @@
           </view>
         </view>
       </view>
-      
+
       <!-- 开始按钮 -->
       <view class="start-btn-container">
         <button class="start-btn" bindtap="goToDiary">开始记录</button>
       </view>
-      
+
       <!-- 底部提示 -->
       <view class="footer-tip">
         <text class="tip-text">温柔陪伴，不定义你</text>
