@@ -62,6 +62,13 @@
 
     <!-- 功能菜单 -->
     <view class="menu-section">
+      <view class="menu-item" bindtap="goToReport">
+        <view class="menu-left">
+          <text class="menu-icon">📊</text>
+          <text class="menu-text">情绪周报</text>
+        </view>
+        <text class="menu-arrow">›</text>
+      </view>
       <view class="menu-item" bindtap="goToSettings">
         <view class="menu-left">
           <text class="menu-icon">⚙️</text>

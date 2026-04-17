@@ -25,6 +25,12 @@ Page({
     })
   },
 
+  goToReport() {
+    wx.navigateTo({
+      url: '/pages/report/report'
+    })
+  },
+
   goToDiaryList() {
     wx.navigateTo({
       url: '/pages/list/list'

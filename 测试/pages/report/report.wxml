@@ -1,0 +1,77 @@
+<!--pages/report/report.wxml-->
+<view class="report-page">
+  <navigation-bar title="情绪周报" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+  
+  <scroll-view class="scroll-area" scroll-y>
+    <!-- 周报标题 -->
+    <view class="report-header">
+      <text class="report-title">本周情绪趋势</text>
+      <text class="report-date">{{weekRange}}</text>
+    </view>
+    
+    <!-- 核心指标 -->
+    <view class="metrics-section">
+      <view class="metric-card">
+        <text class="metric-value">{{totalCount}}</text>
+        <text class="metric-label">记录次数</text>
+      </view>
+      <view class="metric-card">
+        <text class="metric-value positive">{{positiveRatio}}%</text>
+        <text class="metric-label">积极占比</text>
+      </view>
+      <view class="metric-card">
+        <text class="metric-value">{{avgIntensity}}</text>
+        <text class="metric-label">平均强度</text>
+      </view>
+    </view>
+    
+    <!-- 情绪分布 -->
+    <view class="section">
+      <text class="section-title">情绪分布</text>
+      <view class="emotion-list">
+        <block wx:for="{{emotionStats}}" wx:key="name">
+          <view class="emotion-item">
+            <text class="emotion-name">{{item.name}}</text>
+            <view class="emotion-bar-container">
+              <view class="emotion-bar" style="width: {{item.percent}}%"></view>
+            </view>
+            <text class="emotion-count">{{item.count}}次</text>
+          </view>
+        </block>
+      </view>
+    </view>
+    
+    <!-- Fredrickson 3:1 评估 -->
+    <view class="section">
+      <text class="section-title">幸福指数</text>
+      <view class="assessment-card {{assessmentClass}}">
+        <text class="assessment-icon">{{assessmentIcon}}</text>
+        <view class="assessment-content">
+          <text class="assessment-title">{{assessmentTitle}}</text>
+          <text class="assessment-desc">{{assessmentDesc}}</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 建议 -->
+    <view class="section">
+      <text class="section-title">本周建议</text>
+      <view class="suggestions">
+        <block wx:for="{{suggestions}}" wx:key="*this">
+          <view class="suggestion-item">
+            <text class="suggestion-bullet">•</text>
+            <text class="suggestion-text">{{item}}</text>
+          </view>
+        </block>
+      </view>
+    </view>
+    
+    <!-- 无记录提示 -->
+    <view class="empty-state" wx:if="{{totalCount === 0}}">
+      <text class="empty-icon">📝</text>
+      <text class="empty-title">本周还没有记录</text>
+      <text class="empty-desc">开始记录情绪，了解自己的内心变化</text>
+      <button class="empty-btn" bindtap="goToDiary">开始记录</button>
+    </view>
+  </scroll-view>
+</view>
