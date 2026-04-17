@@ -1,7 +1,10 @@
 // pages/profile/profile.js
+const diaryUtils = require('../../utils/diary.js')
+
 Page({
   data: {
-    diaryCount: 0
+    diaryCount: 0,
+    cloudSync: false
   },
 
   onShow() {
@@ -11,11 +14,12 @@ Page({
 
   loadDiaryCount() {
     try {
-      const diaries = wx.getStorageSync('diaries') || []
-      this.setData({ diaryCount: diaries.length })
+      const diaries = wx.getStorageSync('localDiaries') || []
+      const settings = diaryUtils.initUserSettings()
+      this.setData({ diaryCount: diaries.length, cloudSync: !!settings.cloudSync })
     } catch (e) {
       console.error('加载日记数量失败', e)
-      this.setData({ diaryCount: 0 })
+      this.setData({ diaryCount: 0, cloudSync: false })
     }
   },
 

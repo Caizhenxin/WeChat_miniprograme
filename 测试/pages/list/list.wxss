@@ -1,1 +1,131 @@
-/* pages/list/list.wxss */
+page {
+	height: 100vh;
+	background: #f7f8fc;
+}
+
+.list-page {
+	height: 100vh;
+}
+
+.scroll-area {
+	height: calc(100vh - 88rpx);
+	padding: 24rpx;
+	box-sizing: border-box;
+}
+
+.privacy-card {
+	background: #ffffff;
+	border-radius: 16rpx;
+	padding: 20rpx;
+	margin-bottom: 20rpx;
+}
+
+.privacy-title {
+	display: block;
+	font-size: 28rpx;
+	font-weight: 600;
+	color: #253056;
+	margin-bottom: 8rpx;
+}
+
+.privacy-text {
+	display: block;
+	font-size: 24rpx;
+	color: #5d6790;
+	line-height: 1.6;
+}
+
+.diary-item {
+	background: #ffffff;
+	border-radius: 14rpx;
+	padding: 18rpx;
+	margin-bottom: 12rpx;
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+}
+
+.diary-main {
+	flex: 1;
+	margin-right: 12rpx;
+}
+
+.diary-time {
+	display: block;
+	font-size: 23rpx;
+	color: #8690b1;
+	margin-bottom: 8rpx;
+}
+
+.diary-preview {
+	display: block;
+	font-size: 26rpx;
+	color: #2f3a63;
+	line-height: 1.5;
+	margin-bottom: 10rpx;
+}
+
+.feedback-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8rpx;
+}
+
+.feedback-chip {
+	font-size: 22rpx;
+	color: #3156be;
+	background: #e8efff;
+	border-radius: 999rpx;
+	padding: 4rpx 12rpx;
+}
+
+.feedback-action {
+	font-size: 22rpx;
+	color: #5e688f;
+}
+
+.feedback-empty {
+	font-size: 22rpx;
+	color: #9aa2bf;
+}
+
+.item-actions {
+	display: flex;
+	flex-direction: column;
+	gap: 8rpx;
+}
+
+.delete-btn {
+	color: #cb3d4f;
+	background: #ffecef;
+}
+
+.feedback-btn {
+	color: #2f57c4;
+	background: #ecf1ff;
+}
+
+.empty-state {
+	text-align: center;
+	padding: 100rpx 0;
+}
+
+.empty-icon {
+	display: block;
+	font-size: 84rpx;
+	margin-bottom: 10rpx;
+}
+
+.empty-title {
+	display: block;
+	font-size: 30rpx;
+	color: #293458;
+	margin-bottom: 8rpx;
+	font-weight: 600;
+}
+
+.empty-desc {
+	font-size: 24rpx;
+	color: #8a92b1;
+}

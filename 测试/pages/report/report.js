@@ -20,7 +20,13 @@ Page({
     assessmentIcon: '',
     assessmentTitle: '',
     assessmentDesc: '',
-    suggestions: []
+    suggestions: [],
+    totalCheckins: 0,
+    weekCheckins: 0,
+    treeLevel: '🌱',
+    treeLevelTitle: '',
+    treeProgress: 0,
+    todayCheckedIn: false
   },
 
   onLoad() {
@@ -32,8 +38,8 @@ Page({
   },
 
   generateReport() {
-    // 获取本周的日记数据
-    const diaries = wx.getStorageSync('diaries') || []
+    const diaries = wx.getStorageSync('localDiaries') || []
+    const checkinDates = wx.getStorageSync('checkinDates') || []
     
     // 计算本周的日期范围
     const now = new Date()
@@ -50,6 +56,16 @@ Page({
       return date >= weekStart && date <= weekEnd
     })
     
+    const weekCheckins = checkinDates.filter(dateKey => {
+      const date = new Date(`${dateKey}T00:00:00`)
+      return date >= weekStart && date <= weekEnd
+    }).length
+
+    const totalCheckins = checkinDates.length
+    const todayKey = this.getDateKey(now)
+    const todayCheckedIn = checkinDates.includes(todayKey)
+    const treeState = this.getTreeState(totalCheckins)
+
     if (thisWeekDiaries.length === 0) {
       this.setData({
         weekRange,
@@ -61,7 +77,13 @@ Page({
         assessmentIcon: '📝',
         assessmentTitle: '还没有记录',
         assessmentDesc: '开始记录情绪，了解自己的内心变化',
-        suggestions: ['今天开始记录你的第一篇日记吧']
+        suggestions: ['今天开始记录你的第一篇日记吧'],
+        weekCheckins,
+        totalCheckins,
+        todayCheckedIn,
+        treeLevel: treeState.emoji,
+        treeLevelTitle: treeState.title,
+        treeProgress: treeState.progress
       })
       return
     }
@@ -121,7 +143,7 @@ Page({
     } else {
       assessmentClass = 'needing-attention'
       assessmentIcon = '💪'
-      assessmentTitle: '需要关注',
+      assessmentTitle = '需要关注'
       assessmentDesc = '建议尝试"三件好事"练习，训练大脑关注积极面。'
     }
     
@@ -149,8 +171,40 @@ Page({
       assessmentIcon,
       assessmentTitle,
       assessmentDesc,
-      suggestions
+      suggestions,
+      weekCheckins,
+      totalCheckins,
+      todayCheckedIn,
+      treeLevel: treeState.emoji,
+      treeLevelTitle: treeState.title,
+      treeProgress: treeState.progress
     })
+  },
+
+  getDateKey(date) {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  },
+
+  getTreeState(totalCheckins) {
+    const levelGoal = 30
+    const progress = Math.min(100, Math.round(totalCheckins / levelGoal * 100))
+
+    if (totalCheckins >= 24) {
+      return { emoji: '🌳', title: '繁茂大树', progress }
+    }
+    if (totalCheckins >= 16) {
+      return { emoji: '🌲', title: '成长中的树', progress }
+    }
+    if (totalCheckins >= 8) {
+      return { emoji: '🪴', title: '稳定生长', progress }
+    }
+    if (totalCheckins >= 1) {
+      return { emoji: '🌱', title: '刚刚发芽', progress }
+    }
+    return { emoji: '🌰', title: '等待第一滴水', progress: 0 }
   },
 
   formatDate(date) {

@@ -10,6 +10,77 @@ page {
   box-sizing: border-box;
 }
 
+.tree-section {
+  margin-top: 24rpx;
+  margin-bottom: 30rpx;
+}
+
+.tree-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14rpx;
+}
+
+.tree-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.tree-status {
+  font-size: 22rpx;
+  color: #3b82f6;
+  background: #e7f0ff;
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+}
+
+.tree-card {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  background-color: #ffffff;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+}
+
+.tree-emoji {
+  font-size: 72rpx;
+}
+
+.tree-info {
+  flex: 1;
+}
+
+.tree-name {
+  display: block;
+  font-size: 28rpx;
+  color: #2b355d;
+  font-weight: 600;
+  margin-bottom: 6rpx;
+}
+
+.tree-count {
+  display: block;
+  font-size: 24rpx;
+  color: #667296;
+  margin-bottom: 10rpx;
+}
+
+.tree-progress-bar {
+  height: 12rpx;
+  background: #edf2ff;
+  border-radius: 999rpx;
+  overflow: hidden;
+}
+
+.tree-progress-inner {
+  height: 100%;
+  background: linear-gradient(90deg, #36c66f 0%, #2ca866 100%);
+}
+
 /* 头部 */
 .report-header {
   padding: 30rpx 0;

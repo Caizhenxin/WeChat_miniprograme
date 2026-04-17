@@ -1,6 +1,7 @@
 {
   "pages": [
     "pages/index/index",
+    "pages/schools/schools",
     "pages/diary/diary",
     "utils/diary",
     "pages/settings/settings",
@@ -8,6 +9,9 @@
     "pages/profile/profile",
     "pages/report/report"
   ],
+  "usingComponents": {
+    "navigation-bar": "/components/navigation-bar/navigation-bar"
+  },
   "window": {
     "navigationBarTitleText": "微光日记"
   }

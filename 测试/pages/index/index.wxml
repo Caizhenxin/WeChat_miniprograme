@@ -58,7 +58,7 @@
 
       <!-- 开始按钮 -->
       <view class="start-btn-container">
-        <button class="start-btn" bindtap="goToDiary">开始记录</button>
+        <button class="start-btn" bindtap="goToDiary">开始体验（先看流派）</button>
       </view>
 
       <!-- 底部提示 -->

@@ -1,66 +1,106 @@
-<!-- pages/diary/diary.wxml -->
 <view class="diary-page">
-  
-  <!-- 日记内容输入区域 -->
-  <view class="input-section">
-    <textarea 
-      class="diary-input"
-      placeholder="写下你的日记...&#10;分享今天的想法、感受和经历"
-      value="{{content}}"
-      bindinput="onInputContent"
-      auto-height
-      maxlength="2000"
-    />
-    <view class="input-footer">
-      <text class="word-count">{{content.length}}/2000</text>
-      <button class="clear-btn" size="mini" bindtap="onClearContent" wx:if="{{content}}">清空</button>
-    </view>
-  </view>
-  
-  <!-- 分析按钮 -->
-  <button class="analyze-btn" bindtap="onAnalyze" disabled="{{isAnalyzing}}">
-    {{isAnalyzing ? '分析中...' : '🔍 分析日记'}}
-  </button>
-  
-  <!-- 分析结果展示区域 -->
-  <block wx:if="{{actionData.counselingType}}">
-    <!-- 雷达图区域 -->
-   <!-- 正确的写法 -->
-<view class="radar-section" wx:if="{{showRadar}}">
-  <canvas canvas-id="radarCanvas" id="radarCanvas" class="radar-chart" style="width:100%; height:400px;"></canvas>
-</view>
+  <navigation-bar title="记录与分析" back="{{true}}" color="black" background="#FFF"></navigation-bar>
 
-<view class="emotion-scores">
-  <view class="section-title">📈 情绪分数</view>
-  <view class="score-list">
-    <view class="score-item" wx:for="{{actionData.emotionsList}}" wx:key="index">
-      <text class="emotion-name">{{item.name}}</text>
-      <text class="emotion-score">{{item.score}}</text>
+  <scroll-view class="scroll-area" scroll-y>
+    <view class="privacy-banner">
+      <text class="privacy-title">🔒 隐私提示</text>
+      <text class="privacy-desc">默认仅保存到本地设备。开启云同步后才会上传云端。</text>
+    </view>
+
+    <view class="step-card">
+      <view class="step-title">步骤1：先了解四大流派</view>
+      <view class="step-list">
+        <view class="step-item" wx:for="{{coreSchools}}" wx:key="key">
+          <text class="step-name">{{item.name}}</text>
+          <text class="step-focus">{{item.focus}}</text>
+        </view>
+      </view>
+      <button class="light-btn" bindtap="goToSchoolsPage">查看完整科普</button>
+    </view>
+
+    <view class="step-card">
+      <view class="step-title">步骤2：输入日记并分析</view>
+      <textarea
+        class="diary-input"
+        placeholder="写下今天发生的事、当下的情绪和脑海里的想法"
+        value="{{content}}"
+        bindinput="onInputContent"
+        auto-height
+        maxlength="2000"
+      />
+      <view class="input-footer">
+        <text class="word-count">{{content.length}}/2000</text>
+        <button class="clear-btn" size="mini" bindtap="onClearContent" wx:if="{{content}}">清空</button>
+      </view>
+      <button class="analyze-btn" bindtap="onAnalyze" disabled="{{isAnalyzing}}">
+        {{isAnalyzing ? '分析中...' : '分析日记'}}
+      </button>
+    </view>
+
+    <view class="step-card" wx:if="{{showRadar || actionData.schoolResponses.length}}">
+      <view class="step-title">步骤3：查看四流派AI回应并选择最有帮助的一条</view>
+      <view class="radar-section" wx:if="{{showRadar}}">
+        <canvas canvas-id="radarCanvas" id="radarCanvas" class="radar-chart" style="width:100%;height:400px;"></canvas>
+      </view>
+
+      <view class="emotion-scores">
+        <view class="section-title">情绪分数</view>
+        <view class="score-list">
+          <view class="score-item" wx:for="{{actionData.emotionsList}}" wx:key="name">
+            <text class="emotion-name">{{item.name}}</text>
+            <text class="emotion-score">{{item.score}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="school-list">
+        <view
+          class="school-card {{actionData.selectedSchoolIndex === index ? 'active' : ''}}"
+          wx:for="{{actionData.schoolResponses}}"
+          wx:key="schoolKey"
+          data-index="{{index}}"
+          bindtap="onSelectSchool"
+        >
+          <view class="school-head">
+            <text class="school-name">{{item.schoolName}}</text>
+            <text class="school-tag">{{item.schoolTag}}</text>
+          </view>
+          <text class="school-response">{{item.response}}</text>
+        </view>
+        <view class="empty-tip" wx:if="{{!actionData.schoolResponses.length}}">
+          <text>正在准备流派回应，请稍后再点一次“分析日记”</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="step-card" wx:if="{{actionData.selectedAction}}">
+      <view class="step-title">步骤4：选择并执行微行动建议</view>
+      <view class="action-card">
+        <text class="action-name">{{actionData.selectedAction.name}}</text>
+        <text class="action-duration">预计 {{actionData.selectedAction.duration}} 分钟</text>
+        <view class="action-steps">
+          <block wx:for="{{actionData.selectedAction.steps}}" wx:key="*this">
+            <text class="step-text">{{index + 1}}. {{item}}</text>
+          </block>
+        </view>
+        <text class="action-tip">💡 {{actionData.selectedAction.tip}}</text>
+      </view>
+    </view>
+
+    <button class="save-btn" bindtap="onSave" disabled="{{isSaving || !content}}">
+      {{isSaving ? '保存中...' : '保存日记'}}
+    </button>
+
+    <view class="empty-tip" wx:if="{{!isAnalyzing && !actionData.schoolResponses.length && content}}">
+      <text>点击“分析日记”后，将生成四大流派的差异化回应</text>
+    </view>
+  </scroll-view>
+
+  <view class="checkin-mask" wx:if="{{showCheckinAnimation}}">
+    <view class="tree-card pop-in">
+      <text class="tree-emoji">🌳</text>
+      <text class="water-drop">💧</text>
+      <text class="tree-text">{{checkinMessage}}</text>
     </view>
   </view>
-</view>
-    
-    <!-- 咨询流派回应 -->
-    <view class="counseling-section">
-      <view class="counseling-header">
-        <text class="counseling-icon">💬</text>
-        <text class="counseling-title">{{actionData.counselingType}} · {{actionData.counselingDesc}}</text>
-      </view>
-      <view class="counseling-response">
-        <text>{{actionData.counselingResponse}}</text>
-      </view>
-    </view>
-  </block>
-  
-  <!-- 无分析结果时的提示 -->
-  <view class="no-result" wx:elif="{{!isAnalyzing && content}}">
-    <text class="no-result-icon">🔍</text>
-    <text class="no-result-text">点击上方按钮分析你的日记</text>
-  </view>
-  
-  <!-- 保存按钮 -->
-  <button class="save-btn" bindtap="onSaveDiary" disabled="{{isSaving || !content}}">
-    {{isSaving ? '保存中...' : '💾 保存日记'}}
-  </button>
-  
 </view>

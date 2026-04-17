@@ -3,6 +3,23 @@
   <navigation-bar title="情绪周报" back="{{true}}" color="black" background="#FFF"></navigation-bar>
   
   <scroll-view class="scroll-area" scroll-y>
+    <view class="tree-section">
+      <view class="tree-header">
+        <text class="tree-title">情绪小树浇水进度</text>
+        <text class="tree-status">{{todayCheckedIn ? '今日已浇水' : '今日未浇水'}}</text>
+      </view>
+      <view class="tree-card">
+        <text class="tree-emoji">{{treeLevel}}</text>
+        <view class="tree-info">
+          <text class="tree-name">{{treeLevelTitle}}</text>
+          <text class="tree-count">累计打卡 {{totalCheckins}} 天，本周 {{weekCheckins}} 天</text>
+          <view class="tree-progress-bar">
+            <view class="tree-progress-inner" style="width: {{treeProgress}}%"></view>
+          </view>
+        </view>
+      </view>
+    </view>
+
     <!-- 周报标题 -->
     <view class="report-header">
       <text class="report-title">本周情绪趋势</text>

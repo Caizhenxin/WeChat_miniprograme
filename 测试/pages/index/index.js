@@ -2,7 +2,7 @@
 Page({
   goToDiary() {
     wx.navigateTo({
-      url: '/pages/diary/diary'
+      url: '/pages/schools/schools'
     })
   },
 

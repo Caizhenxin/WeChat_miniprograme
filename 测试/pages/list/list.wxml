@@ -1,2 +1,36 @@
-<!--pages/list/list.wxml-->
-<text>pages/list/list.wxml</text>
+<view class="list-page">
+	<navigation-bar title="我的日记" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+
+	<scroll-view class="scroll-area" scroll-y>
+		<view class="privacy-card">
+			<text class="privacy-title">🔒 存储说明</text>
+			<text class="privacy-text">当前默认仅存储于本地设备：{{localPathTip}}</text>
+			<text class="privacy-text" wx:if="{{cloudSync}}">已开启云同步：新日记会同时备份到云端。</text>
+			<text class="privacy-text" wx:else>未开启云同步：数据不会上传，避免外泄。</text>
+		</view>
+
+		<view class="empty-state" wx:if="{{!loading && diaries.length === 0}}">
+			<text class="empty-icon">📝</text>
+			<text class="empty-title">还没有日记</text>
+			<text class="empty-desc">去写第一篇，打卡后还能给情绪小树浇水。</text>
+		</view>
+
+		<view class="diary-list" wx:if="{{diaries.length > 0}}">
+			<view class="diary-item" wx:for="{{diaries}}" wx:key="id">
+				<view class="diary-main" data-index="{{index}}" bindtap="onViewDiary">
+					<text class="diary-time">{{item.createTimeText}}</text>
+					<text class="diary-preview">{{item.preview}}{{item.content.length > 44 ? '...' : ''}}</text>
+					<view class="feedback-row" wx:if="{{item.feedbackMeta.hasFeedback}}">
+						<text class="feedback-chip">{{item.feedbackMeta.schoolName}}</text>
+						<text class="feedback-action">微行动：{{item.feedbackMeta.actionName}}</text>
+					</view>
+					<text class="feedback-empty" wx:else>未记录流派反馈</text>
+				</view>
+				<view class="item-actions">
+					<button class="feedback-btn" size="mini" data-index="{{index}}" bindtap="onViewFeedback">反馈</button>
+					<button class="delete-btn" size="mini" data-id="{{item.id}}" bindtap="onDeleteDiary">删除</button>
+				</view>
+			</view>
+		</view>
+	</scroll-view>
+</view>

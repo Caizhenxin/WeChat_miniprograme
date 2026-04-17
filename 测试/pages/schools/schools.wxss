@@ -1,0 +1,89 @@
+page {
+  height: 100vh;
+  background: #f7f8fc;
+}
+
+.schools-page {
+  height: 100vh;
+}
+
+.scroll-area {
+  height: calc(100vh - 88rpx);
+  padding: 24rpx;
+  box-sizing: border-box;
+}
+
+.intro-card {
+  background: linear-gradient(135deg, #ecf3ff 0%, #f5f1ff 100%);
+  border-radius: 18rpx;
+  padding: 24rpx;
+  margin-bottom: 18rpx;
+}
+
+.intro-title {
+  display: block;
+  font-size: 30rpx;
+  color: #2c3d74;
+  font-weight: 700;
+  margin-bottom: 10rpx;
+}
+
+.intro-desc {
+  display: block;
+  font-size: 25rpx;
+  color: #4f5d88;
+  line-height: 1.7;
+}
+
+.school-card {
+  background: #ffffff;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  margin-bottom: 14rpx;
+}
+
+.school-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10rpx;
+}
+
+.school-name {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #2a355c;
+}
+
+.school-tag {
+  font-size: 22rpx;
+  color: #365fc9;
+  background: #dce8ff;
+  border-radius: 999rpx;
+  padding: 4rpx 12rpx;
+}
+
+.school-desc {
+  display: block;
+  font-size: 25rpx;
+  color: #4f5a84;
+  line-height: 1.6;
+  margin-bottom: 8rpx;
+}
+
+.school-highlight,
+.school-suitable {
+  display: block;
+  font-size: 24rpx;
+  color: #69739a;
+  line-height: 1.6;
+}
+
+.enter-btn {
+  margin-top: 24rpx;
+  margin-bottom: 22rpx;
+  background: linear-gradient(135deg, #4f7cf2 0%, #5560e8 100%);
+  color: #fff;
+  border-radius: 999rpx;
+  font-size: 28rpx;
+}

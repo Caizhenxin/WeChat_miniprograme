@@ -41,7 +41,7 @@
           <view class="proof-icon-small">🚫</view>
           <view class="proof-text">
             <text class="proof-label">云端访问</text>
-            <text class="proof-value">未开启</text>
+            <text class="proof-value">{{cloudSync ? '已开启' : '未开启'}}</text>
           </view>
         </view>
       </view>

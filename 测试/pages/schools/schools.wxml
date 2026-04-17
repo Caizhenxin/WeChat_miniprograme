@@ -1,0 +1,22 @@
+<view class="schools-page">
+  <navigation-bar title="四大流派科普" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+
+  <scroll-view class="scroll-area" scroll-y>
+    <view class="intro-card">
+      <text class="intro-title">为什么先了解流派？</text>
+      <text class="intro-desc">同一段经历在不同心理学视角下，会得到不同关注重点。先理解流派，再分析日记，你会更容易选到真正适合自己的回应。</text>
+    </view>
+
+    <view class="school-card" wx:for="{{schools}}" wx:key="key">
+      <view class="school-head">
+        <text class="school-name">{{item.name}}</text>
+        <text class="school-tag">{{item.shortTag}}</text>
+      </view>
+      <text class="school-desc">{{item.description}}</text>
+      <text class="school-highlight">{{item.highlight}}</text>
+      <text class="school-suitable">{{item.suitable}}</text>
+    </view>
+
+    <button class="enter-btn" bindtap="goToDiary">我已了解，开始写日记</button>
+  </scroll-view>
+</view>

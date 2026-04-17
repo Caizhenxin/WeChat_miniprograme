@@ -1,34 +1,24 @@
 // utils/diary.js
 
-// ========== 日记数据结构 ==========
-class DiaryData {
-  constructor(content, schoolId, actionData) {
-    this.id = Date.now()
-    this.content = content
-    this.selectedSchool = schoolId
-    this.action = actionData
-    this.timestamp = new Date()
-    this.synced = false
-    this.version = 1
-  }
-}
+const LOCAL_DIARY_KEY = 'localDiaries'
+const USER_SETTINGS_KEY = 'userSettings'
+const CHECKIN_DATES_KEY = 'checkinDates'
 
-// ========== 用户设置管理 ==========
 function initUserSettings() {
   try {
-    let settings = wx.getStorageSync('userSettings')
+    let settings = wx.getStorageSync(USER_SETTINGS_KEY)
     if (!settings) {
       settings = {
         cloudSync: false,
         autoBackup: false,
         lastSyncTime: null
       }
-      wx.setStorageSync('userSettings', settings)
+      wx.setStorageSync(USER_SETTINGS_KEY, settings)
     }
     return settings
   } catch (e) {
     console.error('读取设置失败', e)
-    return { cloudSync: false, autoBackup: false }
+    return { cloudSync: false, autoBackup: false, lastSyncTime: null }
   }
 }
 
@@ -36,10 +26,11 @@ function updateUserSettings(newSettings) {
   try {
     const currentSettings = initUserSettings()
     const mergedSettings = { ...currentSettings, ...newSettings }
-    wx.setStorageSync('userSettings', mergedSettings)
+    wx.setStorageSync(USER_SETTINGS_KEY, mergedSettings)
     return mergedSettings
   } catch (e) {
     console.error('保存设置失败', e)
+    return initUserSettings()
   }
 }
 
@@ -48,50 +39,144 @@ function isCloudSyncEnabled() {
   return settings.cloudSync === true
 }
 
-// ========== 日记保存（核心） ==========
-async function saveDiary(content, imagePath = '', actionData = {}) {
-  try {
-    const db = wx.cloud.database()
-    const userInfo = wx.getStorageSync('userInfo') || {}
-    
-    await db.collection('diaries').add({
-      data: {
-        content: content,
-        imagePath: imagePath,
-        actionData: actionData,
-        userId: userInfo.openId || '',
-        createTime: db.serverDate(),
-        updateTime: db.serverDate()
-      }
-    })
-    
-    return true
-  } catch (error) {
-    console.error('保存日记失败:', error)
-    return false
-  }
+function getTodayDateKey() {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
-/**
- * 获取日记列表
- * @returns {Promise<Array>} 日记列表
- */
-async function getDiaryList() {
+function getCheckinDates() {
   try {
-    const db = wx.cloud.database()
-    const res = await db.collection('diaries')
-      .orderBy('createTime', 'desc')
-      .get()
-    
-    return res.data
-  } catch (error) {
-    console.error('获取日记列表失败:', error)
+    return wx.getStorageSync(CHECKIN_DATES_KEY) || []
+  } catch (e) {
+    console.error('读取打卡记录失败', e)
     return []
   }
 }
 
-// 导出方法（CommonJS 规范）
+function addCheckinIfNeeded() {
+  try {
+    const today = getTodayDateKey()
+    const dates = getCheckinDates()
+    const alreadyCheckedIn = dates.includes(today)
+    if (!alreadyCheckedIn) {
+      dates.push(today)
+      wx.setStorageSync(CHECKIN_DATES_KEY, dates)
+    }
+    return {
+      isFirstCheckInToday: !alreadyCheckedIn,
+      totalCheckins: dates.length,
+      today
+    }
+  } catch (e) {
+    console.error('更新打卡记录失败', e)
+    return {
+      isFirstCheckInToday: false,
+      totalCheckins: getCheckinDates().length,
+      today: getTodayDateKey()
+    }
+  }
+}
+
+function getLocalDiaryList() {
+  try {
+    return wx.getStorageSync(LOCAL_DIARY_KEY) || []
+  } catch (e) {
+    console.error('读取本地日记失败', e)
+    return []
+  }
+}
+
+function setLocalDiaryList(diaries) {
+  wx.setStorageSync(LOCAL_DIARY_KEY, diaries)
+}
+
+async function saveDiaryToCloud(record) {
+  try {
+    if (!wx.cloud) return false
+    const db = wx.cloud.database()
+    await db.collection('diaries').add({
+      data: {
+        content: record.content,
+        imagePath: record.imagePath,
+        actionData: record.actionData,
+        createTime: db.serverDate(),
+        updateTime: db.serverDate()
+      }
+    })
+    return true
+  } catch (error) {
+    console.error('云端保存失败:', error)
+    return false
+  }
+}
+
+async function saveDiary(content, imagePath = '', actionData = {}) {
+  try {
+    const now = new Date().toISOString()
+    const record = {
+      id: `diary_${Date.now()}`,
+      content,
+      imagePath,
+      actionData,
+      createTime: now,
+      updateTime: now,
+      saveMode: 'local'
+    }
+
+    const diaries = getLocalDiaryList()
+    diaries.unshift(record)
+    setLocalDiaryList(diaries)
+
+    const checkinStatus = addCheckinIfNeeded()
+    let cloudSynced = false
+    if (isCloudSyncEnabled()) {
+      cloudSynced = await saveDiaryToCloud(record)
+      if (cloudSynced) {
+        updateUserSettings({ lastSyncTime: now })
+      }
+    }
+
+    return {
+      success: true,
+      diary: record,
+      checkinStatus,
+      cloudSynced
+    }
+  } catch (error) {
+    console.error('保存日记失败:', error)
+    return {
+      success: false,
+      error: error.message || '保存失败'
+    }
+  }
+}
+
+async function getDiaryList() {
+  const diaries = getLocalDiaryList()
+  return diaries.sort((a, b) => new Date(b.createTime) - new Date(a.createTime))
+}
+
+function deleteDiaryById(id) {
+  try {
+    const diaries = getLocalDiaryList()
+    const next = diaries.filter(item => item.id !== id)
+    setLocalDiaryList(next)
+    return true
+  } catch (e) {
+    console.error('删除日记失败', e)
+    return false
+  }
+}
+
 module.exports = {
-  saveDiary: saveDiary,
-  getDiaryList: getDiaryList
+  initUserSettings,
+  updateUserSettings,
+  isCloudSyncEnabled,
+  saveDiary,
+  getDiaryList,
+  deleteDiaryById,
+  getCheckinDates
 }

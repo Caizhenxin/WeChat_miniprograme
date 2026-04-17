@@ -14,7 +14,7 @@
   
   <view class="privacy-note" wx:if="{{!cloudSync}}">
     <text class="note-icon">🔒</text>
-    <text class="note-text">您的日记仅保存在本设备，其他人无法访问</text>
+    <text class="note-text">您的日记仅保存在本设备（微信小程序本地存储），其他人无法访问</text>
   </view>
   
   <view class="privacy-note" wx:else>
