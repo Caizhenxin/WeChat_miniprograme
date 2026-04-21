@@ -82,24 +82,48 @@ Page({
         return
       }
 
+      console.log('📤 开始调用云函数 analyzeDiary，输入内容:', content.slice(0, 50) + '...')
+      
       const res = await wx.cloud.callFunction({
         name: 'analyzeDiary',
-        data: { content }
+        data: { content },
+        timeout: 20000  // 20秒超时
       })
+
+      console.log('📥 云函数返回完整结果:', JSON.stringify(res))
 
       if (!res.result || !res.result.success) {
         throw new Error(res.result?.error || '分析失败')
       }
 
       const data = res.result.data || {}
+      
+      // 检查是否使用了兜底方案
+      if (res.result.usingFallback) {
+        console.warn('⚠️ 使用了本地兜底方案，原因:', res.result.fallbackReason)
+        wx.showToast({ 
+          title: 'AI未接入，使用默认回应', 
+          icon: 'none',
+          duration: 3000
+        })
+      } else {
+        console.log('✅ AI分析成功，dominantEmotion:', data.dominantEmotion)
+      }
+
       const scores = data.scores || data.emotions || data.emotionScores || {}
       const emotionsList = Object.keys(scores)
         .map(name => ({ name, score: scores[name] }))
         .sort((a, b) => b.score - a.score)
 
+      console.log('📊 情绪分数:', emotionsList)
+      console.log('💬 流派回应数量:', data.schoolResponses?.length || 0)
+
       const schoolResponses = this.buildSchoolResponses(data, content)
       const selectedSchoolIndex = schoolResponses.length > 0 ? 0 : null
       const selectedAction = selectedSchoolIndex !== null ? schoolResponses[0].action : null
+
+      console.log('🔍 selectedSchoolIndex:', selectedSchoolIndex)
+      console.log('🔍 selectedAction:', selectedAction)
 
       this.setData({
         actionData: {
@@ -133,18 +157,35 @@ Page({
 
   // 构建雷达图数据
   buildRadarData(scores) {
-    if (!scores) return null
-    
-    const dimensions = []
-    const values = []
-    for (let key in scores) {
-      if (scores.hasOwnProperty(key)) {
-        dimensions.push(key)
-        values.push(scores[key])
-      }
+    if (!scores) {
+      console.log('⚠️ buildRadarData: scores为空')
+      return null
     }
     
+    // 只选择有分数的情绪维度（过滤掉0值的）
+    const emotionOrder = ['快乐', '悲伤', '愤怒', '恐惧', '焦虑', '平静', '期待', '失望', '满足', '孤独', '亲密', '迷茫', '疲惫']
+    const dimensions = []
+    const values = []
+    
+    emotionOrder.forEach(key => {
+      if (scores.hasOwnProperty(key)) {
+        dimensions.push(key)
+        // 确保值不会太小，如果是0给一个很小的基数让图形不会退化
+        values.push(scores[key] || 1)  // 0改为1，避免图形退化
+      }
+    })
+    
+    console.log('📊 buildRadarData dimensions:', dimensions)
+    console.log('📊 buildRadarData values:', values)
+    
     if (dimensions.length === 0) return null
+    
+    // 检查是否所有值都一样（会导致图形退化）
+    const allSame = values.every(v => v === values[0])
+    if (allSame && values[0] <= 1) {
+      console.log('⚠️ 所有情绪值相同且接近0，使用默认值')
+      values[0] = 30  // 至少显示一些变化
+    }
     
     return {
       indicator: dimensions.map(dim => ({ name: dim, max: 100 })),
@@ -159,39 +200,49 @@ Page({
   // 绘制雷达图
   drawRadarChart: function() {
     if (!this.data.showRadar || !this.data.radarData) {
+      console.log('跳过雷达图绘制: showRadar=', this.data.showRadar, 'radarData=', !!this.data.radarData)
       return
     }
     
-    const canvasQuery = wx.createSelectorQuery()
-    canvasQuery.select('#radarCanvas').boundingClientRect()
-    canvasQuery.exec((rectRes) => {
-      const rect = rectRes && rectRes[0]
-      if (!rect || !rect.width || !rect.height) {
-        const retry = (this.data.radarRetryCount || 0) + 1
-        if (retry <= 3) {
-          this.setData({ radarRetryCount: retry })
-          setTimeout(() => this.drawRadarChart(), 220)
-        } else {
-          console.warn('雷达图容器未就绪，停止重试')
+    try {
+      const canvasQuery = wx.createSelectorQuery()
+      canvasQuery.select('#radarCanvas').boundingClientRect()
+      canvasQuery.exec((rectRes) => {
+        try {
+          const rect = rectRes && rectRes[0]
+          if (!rect || !rect.width || !rect.height) {
+            const retry = (this.data.radarRetryCount || 0) + 1
+            if (retry <= 3) {
+              console.log(`雷达图重试 ${retry}/3`)
+              this.setData({ radarRetryCount: retry })
+              setTimeout(() => this.drawRadarChart(), 300)
+            } else {
+              console.warn('雷达图容器未就绪，停止重试')
+            }
+            return
+          }
+
+          const ctx = wx.createCanvasContext('radarCanvas', this)
+          if (!ctx) {
+            console.error('获取 canvas 上下文失败')
+            return
+          }
+
+          const { radarData } = this.data
+          if (!radarData || !radarData.indicator || radarData.indicator.length === 0) {
+            console.error('雷达图数据无效', radarData)
+            return
+          }
+
+          this.renderRadarChart(ctx, radarData, rect.width, rect.height)
+          this.setData({ radarRetryCount: 0 })
+        } catch (execError) {
+          console.error('雷达图绘制执行错误:', execError)
         }
-        return
-      }
-
-      const ctx = wx.createCanvasContext('radarCanvas', this)
-      if (!ctx) {
-        console.error('获取 canvas 上下文失败')
-        return
-      }
-
-      const { radarData } = this.data
-      if (!radarData || !radarData.indicator || radarData.indicator.length === 0) {
-        console.error('雷达图数据无效')
-        return
-      }
-
-      this.renderRadarChart(ctx, radarData, rect.width, rect.height)
-      this.setData({ radarRetryCount: 0 })
-    })
+      })
+    } catch (err) {
+      console.error('雷达图绘制错误:', err)
+    }
   },
 
   buildSchoolResponses(data, content) {
@@ -292,85 +343,165 @@ Page({
     ]
   },
 
-  // 渲染雷达图
+  // 渲染雷达图 - 美化版
   renderRadarChart: function(ctx, data, width, height) {
-    const dimensions = data.indicator.length
-    const values = data.series[0].data[0].value
-    const centerX = width / 2
-    const centerY = height / 2
-    const radius = Math.min(width, height) * 0.35
-    const angleStep = (Math.PI * 2) / dimensions
-    
-    // 清空画布
-    ctx.clearRect(0, 0, width, height)
-    
-    // 绘制背景网格（5层）
-    const levels = [0.2, 0.4, 0.6, 0.8, 1.0]
-    levels.forEach(level => {
+    try {
+      const dimensions = data.indicator.length
+      const values = data.series[0].data[0].value
+      
+      if (!values || values.length === 0) {
+        console.error('雷达图数据为空')
+        return
+      }
+      
+      const centerX = width / 2
+      const centerY = height / 2
+      const radius = Math.min(width, height) * 0.32
+      const angleStep = (Math.PI * 2) / dimensions
+      
+      // 清空画布
+      ctx.clearRect(0, 0, width, height)
+      
+      // 绘制背景圆（最外层）
+      ctx.beginPath()
+      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI)
+      ctx.setFillStyle('#f8f9ff')
+      ctx.fill()
+      
+      // 绘制背景网格（5层同心圆）
+      const levels = [0.2, 0.4, 0.6, 0.8, 1.0]
+      levels.forEach((level, idx) => {
+        ctx.beginPath()
+        ctx.arc(centerX, centerY, radius * level, 0, 2 * Math.PI)
+        if (idx === 4) {
+          ctx.setStrokeStyle('#c5cae9')
+          ctx.setLineWidth(2)
+        } else {
+          ctx.setStrokeStyle('#e8eaf6')
+          ctx.setLineWidth(1)
+        }
+        ctx.stroke()
+      })
+      
+      // 绘制轴线和标签
+      for (let i = 0; i < dimensions; i++) {
+        const angle = i * angleStep - Math.PI / 2
+        const x = centerX + radius * Math.cos(angle)
+        const y = centerY + radius * Math.sin(angle)
+        
+        // 轴线
+        ctx.beginPath()
+        ctx.moveTo(centerX, centerY)
+        ctx.lineTo(x, y)
+        ctx.setStrokeStyle('#c5cae9')
+        ctx.setLineWidth(1)
+        ctx.stroke()
+        
+        // 标签背景
+        const labelText = data.indicator[i].name
+        ctx.setFontSize(10)
+        const textWidth = ctx.measureText ? ctx.measureText(labelText).width : 40
+        
+        // 根据位置调整标签位置
+        let labelX, labelY
+        const angleDeg = (angle * 180 / Math.PI)
+        if (angleDeg >= -45 && angleDeg < 45) {
+          // 右侧
+          labelX = x + 8
+          labelY = y + 4
+        } else if (angleDeg >= 45 && angleDeg < 135) {
+          // 下方
+          labelX = x - textWidth / 2
+          labelY = y + 16
+        } else if (angleDeg >= -135 && angleDeg < -45) {
+          // 上方
+          labelX = x - textWidth / 2
+          labelY = y - 6
+        } else {
+          // 左侧
+          labelX = x - textWidth - 8
+          labelY = y + 4
+        }
+        
+        // 绘制标签
+        ctx.setFillStyle('#5c6bc0')
+        ctx.fillText(labelText, labelX, labelY)
+      }
+      
+      // 绘制数据区域（渐变填充）
+      // 先绘制半透明填充
       ctx.beginPath()
       for (let i = 0; i <= dimensions; i++) {
         const angle = i * angleStep - Math.PI / 2
-        const x = centerX + radius * level * Math.cos(angle)
-        const y = centerY + radius * level * Math.sin(angle)
+        const value = (values[i % values.length] || 0) / 100
+        const pointRadius = Math.max(value * radius, 8)  // 最小8像素
+        const x = centerX + pointRadius * Math.cos(angle)
+        const y = centerY + pointRadius * Math.sin(angle)
         if (i === 0) ctx.moveTo(x, y)
         else ctx.lineTo(x, y)
       }
       ctx.closePath()
-      ctx.setStrokeStyle('#ddd')
-      ctx.stroke()
-    })
-    
-    // 绘制轴线
-    for (let i = 0; i < dimensions; i++) {
-      const angle = i * angleStep - Math.PI / 2
-      const x = centerX + radius * Math.cos(angle)
-      const y = centerY + radius * Math.sin(angle)
+      
+      // 渐变填充
+      const gradient = ctx.createLinearGradient(centerX - radius, centerY - radius, centerX + radius, centerY + radius)
+      gradient.addColorStop(0, 'rgba(92, 107, 192, 0.4)')
+      gradient.addColorStop(1, 'rgba(63, 81, 181, 0.25)')
+      ctx.setFillStyle(gradient)
+      ctx.fill()
+      
+      // 边框
       ctx.beginPath()
-      ctx.moveTo(centerX, centerY)
-      ctx.lineTo(x, y)
-      ctx.setStrokeStyle('#ddd')
+      for (let i = 0; i <= dimensions; i++) {
+        const angle = i * angleStep - Math.PI / 2
+        const value = (values[i % values.length] || 0) / 100
+        const pointRadius = Math.max(value * radius, 8)
+        const x = centerX + pointRadius * Math.cos(angle)
+        const y = centerY + pointRadius * Math.sin(angle)
+        if (i === 0) ctx.moveTo(x, y)
+        else ctx.lineTo(x, y)
+      }
+      ctx.closePath()
+      ctx.setStrokeStyle('#3f51b5')
+      ctx.setLineWidth(2.5)
       ctx.stroke()
       
-      // 添加标签
-      ctx.setFontSize(12)
-      ctx.setFillStyle('#666')
-      const labelX = x + (x > centerX ? 8 : -8)
-      const labelY = y + (y > centerY ? -8 : 8)
-      ctx.fillText(data.indicator[i].name, labelX, labelY)
+      // 绘制数据点
+      for (let i = 0; i < dimensions; i++) {
+        const angle = i * angleStep - Math.PI / 2
+        const value = (values[i] || 0) / 100
+        const pointRadius = Math.max(value * radius, 8)
+        const x = centerX + pointRadius * Math.cos(angle)
+        const y = centerY + pointRadius * Math.sin(angle)
+        
+        // 外圈
+        ctx.beginPath()
+        ctx.arc(x, y, 6, 0, 2 * Math.PI)
+        ctx.setFillStyle('#fff')
+        ctx.fill()
+        ctx.setStrokeStyle('#3f51b5')
+        ctx.setLineWidth(2)
+        ctx.stroke()
+        
+        // 内圈（根据情绪强度变色）
+        ctx.beginPath()
+        ctx.arc(x, y, 3, 0, 2 * Math.PI)
+        if (value >= 50) {
+          ctx.setFillStyle('#f44336')  // 红色-强
+        } else if (value >= 30) {
+          ctx.setFillStyle('#ff9800')  // 橙色-中
+        } else {
+          ctx.setFillStyle('#4caf50')  // 绿色-弱
+        }
+        ctx.fill()
+      }
+      
+      // 执行绘制
+      ctx.draw(false, () => {
+        console.log('雷达图绘制完成')
+      })
+    } catch (e) {
+      console.error('渲染雷达图异常:', e)
     }
-    
-    // 绘制数据区域
-    ctx.beginPath()
-    for (let i = 0; i <= dimensions; i++) {
-      const angle = i * angleStep - Math.PI / 2
-      const value = (values[i % values.length] || 0) / 100
-      const x = centerX + radius * value * Math.cos(angle)
-      const y = centerY + radius * value * Math.sin(angle)
-      if (i === 0) ctx.moveTo(x, y)
-      else ctx.lineTo(x, y)
-    }
-    ctx.closePath()
-    ctx.setFillStyle('rgba(102, 126, 234, 0.3)')
-    ctx.fill()
-    ctx.setStrokeStyle('#667eea')
-    ctx.setLineWidth(2)
-    ctx.stroke()
-    
-    // 绘制数据点
-    for (let i = 0; i < dimensions; i++) {
-      const angle = i * angleStep - Math.PI / 2
-      const value = (values[i] || 0) / 100
-      const x = centerX + radius * value * Math.cos(angle)
-      const y = centerY + radius * value * Math.sin(angle)
-      ctx.beginPath()
-      ctx.arc(x, y, 4, 0, 2 * Math.PI)
-      ctx.setFillStyle('#667eea')
-      ctx.fill()
-    }
-    
-    // 执行绘制
-    ctx.draw(true)
-    console.log('雷达图绘制完成')
   },
 
   onSelectSchool(e) {

@@ -35,7 +35,7 @@
           <image class="feature-icon" src="/images/feature1.png" mode="aspectFit"></image>
           <view class="feature-content">
             <text class="feature-title">多流派解读</text>
-            <text class="feature-desc">从CBT、ACT、积极心理学等多个视角理解你的情绪</text>
+            <text class="feature-desc"> 从CBT、ACT、积极心理学等多个视角理解你的情绪</text>
           </view>
         </view>
 
@@ -43,7 +43,7 @@
           <image class="feature-icon" src="/images/feature2.png" mode="aspectFit"></image>
           <view class="feature-content">
             <text class="feature-title">5分钟微行动</text>
-            <text class="feature-desc">每种流派配以可立即执行的小行动，温和促进改变</text>
+            <text class="feature-desc"> 每种流派配以可立即执行的小行动，温和促进改变</text>
           </view>
         </view>
 
@@ -51,14 +51,14 @@
           <image class="feature-icon" src="/images/feature3.png" mode="aspectFit"></image>
           <view class="feature-content">
             <text class="feature-title">雷达图可视化</text>
-            <text class="feature-desc">直观展示十种情绪维度的分布，洞察内心状态</text>
+            <text class="feature-desc"> 直观展示十种情绪维度的分布，洞察内心状态</text>
           </view>
         </view>
       </view>
 
       <!-- 开始按钮 -->
       <view class="start-btn-container">
-        <button class="start-btn" bindtap="goToDiary">开始体验（先看流派）</button>
+        <button class="start-btn" bindtap="goToDiary">开始体验</button>
       </view>
 
       <!-- 底部提示 -->
