@@ -6,7 +6,14 @@
       <text class="privacy-title">🔒 隐私提示</text>
       <text class="privacy-desc">默认仅保存到本地设备。开启云同步后才会上传云端。</text>
     </view>
+    <view wx:if="{{analysisResult}}">
+      <text>情绪分析结果：{{analysisResult.emotion}}</text>
+      <text>分析建议：{{analysisResult.suggestion}}</text>
+    </view>
 
+    <view wx:else>
+      <text>暂无分析结果，点击下方按钮分析日记</text>
+    </view>
     <view class="step-card">
       <view class="step-title">步骤1：先了解四大流派</view>
       <view class="step-list">

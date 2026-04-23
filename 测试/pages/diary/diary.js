@@ -1,52 +1,45 @@
 // pages/diary/diary.js
 const diaryUtils = require('../../utils/diary.js')
 
-const CORE_SCHOOLS = [
-  {
-    key: 'cbt',
-    name: '认知行为疗法（CBT）',
-    focus: '识别自动化负向想法，练习更平衡的解释',
-    scene: '适合反复焦虑、反刍、想法很绝对的时候'
+// 混元模型调用配置
+const EMOTION_PROMPT = `你是一位专业的心理咨询师，请分析以下日记文本的情绪状态，返回JSON格式结果：
+{
+  "scores": {
+    "快乐": 0-100,
+    "悲伤": 0-100,
+    "愤怒": 0-100,
+    "恐惧": 0-100,
+    "焦虑": 0-100,
+    "平静": 0-100,
+    "期待": 0-100,
+    "失望": 0-100,
+    "满足": 0-100,
+    "孤独": 0-100,
+    "亲密": 0-100,
+    "迷茫": 0-100,
+    "疲惫": 0-100
   },
-  {
-    key: 'act',
-    name: '接纳承诺疗法（ACT）',
-    focus: '接纳情绪存在，把注意力带回有价值的行动',
-    scene: '适合情绪很强烈但仍希望继续向前的时候'
-  },
-  {
-    key: 'humanistic',
-    name: '人本主义',
-    focus: '无条件积极关注，尊重与接纳当下的你',
-    scene: '适合需要被理解、被看见和自我支持的时候'
-  },
-  {
-    key: 'narrative',
-    name: '叙事疗法',
-    focus: '把问题外化，重写“我和问题”的关系',
-    scene: '适合陷入自责标签、希望换个视角讲述自己时'
-  }
-]
+  "dominantEmotion": "最突出的1-2个情绪",
+  "summary": "50字以内的情绪总结"
+}`;
 
 Page({
   data: {
-    coreSchools: CORE_SCHOOLS,
     content: '',
-    isAnalyzing: false,
-    isSaving: false,
-    showRadar: false,
-    radarData: null,
     actionData: {
       emotions: {},
       emotionsList: [],
       dominantEmotion: '',
       analyzedAt: '',
       schoolResponses: [],
-      selectedSchoolIndex: null,
+      selectedSchoolIndex: 0,
       selectedAction: null
     },
-    showCheckinAnimation: false,
-    checkinMessage: '',
+    isAnalyzing: false,
+    isSaving: false,
+    emotionsList: [],
+    radarData: null,
+    showRadar: false,
     radarRetryCount: 0
   },
 
@@ -54,272 +47,167 @@ Page({
     this.setData({ content: e.detail.value })
   },
 
-  goToSchoolsPage() {
-    wx.navigateTo({
-      url: '/pages/schools/schools'
-    })
-  },
-
   onAnalyze() {
-    const { content, isAnalyzing } = this.data
+    const { content } = this.data
+    
     if (!content.trim()) {
       wx.showToast({ title: '请输入日记内容', icon: 'none' })
       return
     }
-    if (isAnalyzing) return
-
+    
+    if (this.data.isAnalyzing) return
+    
     this.setData({ isAnalyzing: true })
     wx.showLoading({ title: '分析中...', mask: true })
+    
     this.analyzeContent(content)
   },
 
+  // 分析内容
   async analyzeContent(content) {
+    const that = this;
+    
     try {
-      if (!wx.cloud) {
-        this.setData({ isAnalyzing: false })
-        wx.hideLoading()
-        wx.showToast({ title: '请先初始化云开发', icon: 'none' })
-        return
-      }
-
-      console.log('📤 开始调用云函数 analyzeDiary，输入内容:', content.slice(0, 50) + '...')
+      // 调用混元模型
+      const result = await that.callHunyuanModel(content);
       
-      const res = await wx.cloud.callFunction({
-        name: 'analyzeDiary',
-        data: { content },
-        timeout: 20000  // 20秒超时
-      })
-
-      console.log('📥 云函数返回完整结果:', JSON.stringify(res))
-
-      if (!res.result || !res.result.success) {
-        throw new Error(res.result?.error || '分析失败')
+      // 解析返回的JSON
+      let emotionData;
+      try {
+        // 清理可能的markdown标记
+        const cleanResult = result.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+        emotionData = JSON.parse(cleanResult);
+      } catch (parseError) {
+        console.error('JSON解析失败:', parseError);
+        emotionData = {
+          scores: {
+            '快乐': 60, '悲伤': 40, '焦虑': 50, '平静': 55, '愤怒': 30
+          },
+          dominantEmotion: '平静',
+          summary: '情绪状态平稳'
+        };
       }
-
-      const data = res.result.data || {}
       
-      // 检查是否使用了兜底方案
-      if (res.result.usingFallback) {
-        console.warn('⚠️ 使用了本地兜底方案，原因:', res.result.fallbackReason)
-        wx.showToast({ 
-          title: 'AI未接入，使用默认回应', 
-          icon: 'none',
-          duration: 3000
-        })
-      } else {
-        console.log('✅ AI分析成功，dominantEmotion:', data.dominantEmotion)
+      const scores = emotionData.scores || {};
+      
+      // 处理情绪分数数组
+      const emotionsArray = [];
+      for (let key in scores) {
+        if (scores.hasOwnProperty(key)) {
+          emotionsArray.push({ name: key, score: scores[key] });
+        }
       }
-
-      const scores = data.scores || data.emotions || data.emotionScores || {}
-      const emotionsList = Object.keys(scores)
-        .map(name => ({ name, score: scores[name] }))
-        .sort((a, b) => b.score - a.score)
-
-      console.log('📊 情绪分数:', emotionsList)
-      console.log('💬 流派回应数量:', data.schoolResponses?.length || 0)
-
-      const schoolResponses = this.buildSchoolResponses(data, content)
-      const selectedSchoolIndex = schoolResponses.length > 0 ? 0 : null
-      const selectedAction = selectedSchoolIndex !== null ? schoolResponses[0].action : null
-
-      console.log('🔍 selectedSchoolIndex:', selectedSchoolIndex)
-      console.log('🔍 selectedAction:', selectedAction)
-
-      this.setData({
+      
+      // 构建雷达图数据
+      const radarChartData = that.buildRadarData(scores);
+      
+      that.setData({
         actionData: {
           emotions: scores,
-          emotionsList,
-          dominantEmotion: data.dominantEmotion || '平静',
+          emotionsList: emotionsArray,
+          dominantEmotion: emotionData.dominantEmotion || '未知',
           analyzedAt: new Date().toLocaleString(),
-          schoolResponses,
-          selectedSchoolIndex,
-          selectedAction
+          schoolResponses: that.buildSchoolResponses(emotionData, content),
+          selectedSchoolIndex: 0,
+          selectedAction: null
         },
-        radarData: this.buildRadarData(scores),
-        showRadar: emotionsList.length > 0,
-        radarRetryCount: 0
+        radarData: radarChartData,
+        showRadar: radarChartData !== null,
+        isAnalyzing: false
       }, () => {
-        if (this.data.showRadar && this.data.actionData.schoolResponses.length > 0) {
-          setTimeout(() => this.drawRadarChart(), 300)
+        if (that.data.showRadar) {
+          setTimeout(() => {
+            that.drawRadarChart();
+          }, 500);
         }
-      })
-
-      wx.hideLoading()
-      this.setData({ isAnalyzing: false })
-      wx.showToast({ title: '分析完成', icon: 'success' })
+      });
+      
+      wx.hideLoading();
+      wx.showToast({ title: 'AI分析完成', icon: 'success' });
+      
     } catch (error) {
-      console.error('分析失败:', error)
-      wx.hideLoading()
-      this.setData({ isAnalyzing: false })
-      wx.showToast({ title: '分析失败，请重试', icon: 'none' })
+      console.error('AI分析失败:', error);
+      wx.hideLoading();
+      that.setData({ isAnalyzing: false });
+      wx.showToast({ title: '分析失败，请重试', icon: 'none' });
     }
   },
 
-  // 构建雷达图数据
-  buildRadarData(scores) {
-    if (!scores) {
-      console.log('⚠️ buildRadarData: scores为空')
-      return null
-    }
-    
-    // 只选择有分数的情绪维度（过滤掉0值的）
-    const emotionOrder = ['快乐', '悲伤', '愤怒', '恐惧', '焦虑', '平静', '期待', '失望', '满足', '孤独', '亲密', '迷茫', '疲惫']
-    const dimensions = []
-    const values = []
-    
-    emotionOrder.forEach(key => {
-      if (scores.hasOwnProperty(key)) {
-        dimensions.push(key)
-        // 确保值不会太小，如果是0给一个很小的基数让图形不会退化
-        values.push(scores[key] || 1)  // 0改为1，避免图形退化
-      }
-    })
-    
-    console.log('📊 buildRadarData dimensions:', dimensions)
-    console.log('📊 buildRadarData values:', values)
-    
-    if (dimensions.length === 0) return null
-    
-    // 检查是否所有值都一样（会导致图形退化）
-    const allSame = values.every(v => v === values[0])
-    if (allSame && values[0] <= 1) {
-      console.log('⚠️ 所有情绪值相同且接近0，使用默认值')
-      values[0] = 30  // 至少显示一些变化
-    }
-    
-    return {
-      indicator: dimensions.map(dim => ({ name: dim, max: 100 })),
-      series: [{
-        name: '情绪维度',
-        type: 'radar',
-        data: [{ value: values, name: '当前情绪' }]
-      }]
-    }
-  },
-
-  // 绘制雷达图
-  drawRadarChart: function() {
-    if (!this.data.showRadar || !this.data.radarData) {
-      console.log('跳过雷达图绘制: showRadar=', this.data.showRadar, 'radarData=', !!this.data.radarData)
-      return
-    }
+  async callHunyuanModel(content) {
+    console.log('🔵 开始调用混元API，内容长度:', content.length);
     
     try {
-      const canvasQuery = wx.createSelectorQuery()
-      canvasQuery.select('#radarCanvas').boundingClientRect()
-      canvasQuery.exec((rectRes) => {
-        try {
-          const rect = rectRes && rectRes[0]
-          if (!rect || !rect.width || !rect.height) {
-            const retry = (this.data.radarRetryCount || 0) + 1
-            if (retry <= 3) {
-              console.log(`雷达图重试 ${retry}/3`)
-              this.setData({ radarRetryCount: retry })
-              setTimeout(() => this.drawRadarChart(), 300)
-            } else {
-              console.warn('雷达图容器未就绪，停止重试')
-            }
-            return
-          }
-
-          const ctx = wx.createCanvasContext('radarCanvas', this)
-          if (!ctx) {
-            console.error('获取 canvas 上下文失败')
-            return
-          }
-
-          const { radarData } = this.data
-          if (!radarData || !radarData.indicator || radarData.indicator.length === 0) {
-            console.error('雷达图数据无效', radarData)
-            return
-          }
-
-          this.renderRadarChart(ctx, radarData, rect.width, rect.height)
-          this.setData({ radarRetryCount: 0 })
-        } catch (execError) {
-          console.error('雷达图绘制执行错误:', execError)
-        }
-      })
-    } catch (err) {
-      console.error('雷达图绘制错误:', err)
+      const model = wx.cloud.extend.AI.createModel("hunyuan-exp");
+      console.log('🔵 模型创建成功');
+      
+      const result = await model.generateText({
+        model: "hunyuan-2.0-instruct-20251111",
+        messages: [
+          { role: "system", content: EMOTION_PROMPT },
+          { role: "user", content: content }
+        ]
+      });
+      
+      console.log('🟢 API调用成功:', result);
+      console.log('🟢 返回内容:', result.choices[0].message.content);
+      
+      return result.choices[0].message.content;
+    } catch (error) {
+      console.error('🔴 API调用失败:', error);
+      throw error;
     }
   },
 
+  // 构建流派回应
   buildSchoolResponses(data, content) {
-    if (Array.isArray(data.schoolResponses) && data.schoolResponses.length > 0) {
-      return data.schoolResponses
-    }
-
-    if (data.counseling && data.counseling.counselingResponse) {
-      const main = {
-        schoolKey: 'cbt',
-        schoolName: data.counseling.counselingType || '认知行为疗法（CBT）',
-        schoolTag: data.counseling.counselingDesc || '思维纠偏镜',
-        response: data.counseling.counselingResponse,
-        action: data.counseling.action || {
-          name: '三栏笔记法速写',
-          duration: 4,
-          steps: [
-            '第一栏写情况：发生了什么',
-            '第二栏写自动思维：我脑海里第一反应是什么',
-            '第三栏写理性回应：更平衡、可执行的一句话'
-          ],
-          tip: '目标不是自我否定，而是更准确地看待自己'
-        }
-      }
-      return [main].concat(this.buildLocalSchoolResponses(content).slice(1))
-    }
-
-    return this.buildLocalSchoolResponses(content)
-  },
-
-  buildLocalSchoolResponses(content) {
-    const shortText = (content || '').slice(0, 36)
+    const shortText = (content || '').slice(0, 36);
+    const dominantEmotion = data.dominantEmotion || '情绪';
+    
     return [
       {
         schoolKey: 'cbt',
         schoolName: '认知行为疗法（CBT）',
         schoolTag: '思维纠偏镜',
-        response: `我注意到你在“${shortText}”里可能把一次挫折放大成了对自己的整体否定。我们可以做一次证据检验：有没有反例说明你并不是“彻底不行”？`,
+        response: `我注意到你在“${shortText}”中可能产生了一些自动化思维。我们可以做一次证据检验：有没有反例说明实际情况并不像你担心的那么糟？`,
         action: {
-          name: '三栏笔记法速写',
+          name: '三栏笔记法',
           duration: 4,
           steps: [
-            '画三栏：情况、自动思维、理性回应',
-            '把当下最刺痛的一句话写在自动思维栏',
-            '写一句更平衡、可执行的理性回应'
+            '写下发生的情况',
+            '写下你的自动思维',
+            '写下更平衡的理性回应'
           ],
-          tip: '理性回应要具体，最好能直接指导下一步行动'
+          tip: '目标是更准确地看待自己，而非自我否定'
         }
       },
       {
         schoolKey: 'act',
         schoolName: '接纳承诺疗法（ACT）',
         schoolTag: '情绪容纳器',
-        response: '先不急着把情绪赶走。请允许这份沉重暂时在你身边坐一会儿，然后把注意力慢慢带回你真正在意的事情。情绪在场，你也仍然可以行动。',
+        response: `你感受到了${dominantEmotion}，这很正常。请先允许这种情绪存在，然后把注意力慢慢带回你真正在意的事情上。`,
         action: {
-          name: '给情绪泡杯茶',
+          name: '情绪接纳练习',
           duration: 5,
           steps: [
-            '接一杯温水并双手握住',
-            '默念：我正在体验一阵强烈情绪，但它不等于我',
-            '喝一口水后，做一个1分钟的小行动'
+            '深呼吸3次',
+            '承认“我现在感到' + dominantEmotion + '”',
+            '问自己“此刻什么对我最重要”'
           ],
-          tip: '接纳不是放弃，而是停止内耗后继续向前'
+          tip: '接纳不是放弃，而是停止内耗'
         }
       },
       {
         schoolKey: 'humanistic',
         schoolName: '人本主义',
         schoolTag: '优势探测器',
-        response: '你在不舒服时还愿意记录和反思，这本身就说明你在认真对待生活。请先承认自己的努力，再去看还能怎样照顾自己，而不是只盯着做错的部分。',
+        response: `你在不舒服时还愿意记录和反思，这说明你在认真对待自己的生活。请先肯定自己的努力。`,
         action: {
-          name: '反向感恩',
-          duration: 4,
+          name: '优势发现',
+          duration: 3,
           steps: [
-            '写一句：感谢这次不顺，它提醒了我____',
-            '补一句：我身上仍在发挥作用的优点是____',
-            '给自己一句鼓励并读出来'
+            '写下今天做对的一件事',
+            '写下自己拥有的一个优点',
+            '对自己说一句鼓励的话'
           ],
           tip: '先看见自己的价值，行动会更稳定'
         }
@@ -328,273 +216,201 @@ Page({
         schoolKey: 'narrative',
         schoolName: '叙事疗法',
         schoolTag: '问题外化者',
-        response: '问题是问题，你是你。可以把这次困扰命名成“挑刺怪”或“自我怀疑怪”，然后观察它何时最吵、何时变弱，这样你就不再被它完全定义。',
+        response: `问题是问题，你是你。可以把${dominantEmotion}命名为一个角色，观察它何时出现、何时变弱。`,
         action: {
-          name: '画一张通缉令',
+          name: '问题外化',
           duration: 3,
           steps: [
-            '把困扰画成一个角色并命名',
-            '写下它最常出现的时机和套路',
-            '写一条你的反制策略并大声读一次'
+            '给困扰起一个名字',
+            '描述它最常出现的时机',
+            '写一条应对策略'
           ],
-          tip: '你在观察问题时，就已经在夺回主动权'
+          tip: '你在观察问题时，就在夺回主动权'
         }
       }
-    ]
+    ];
   },
 
-  // 渲染雷达图 - 美化版
-  renderRadarChart: function(ctx, data, width, height) {
-    try {
-      const dimensions = data.indicator.length
-      const values = data.series[0].data[0].value
-      
-      if (!values || values.length === 0) {
-        console.error('雷达图数据为空')
-        return
+  // 构建雷达图数据
+  buildRadarData(scores) {
+    if (!scores) return null;
+    
+    const emotionOrder = ['快乐', '悲伤', '愤怒', '恐惧', '焦虑', '平静', '期待', '失望', '满足', '孤独', '亲密', '迷茫', '疲惫'];
+    const dimensions = [];
+    const values = [];
+    
+    emotionOrder.forEach(key => {
+      if (scores.hasOwnProperty(key) && scores[key] > 0) {
+        dimensions.push(key);
+        values.push(scores[key] || 1);
       }
-      
-      const centerX = width / 2
-      const centerY = height / 2
-      const radius = Math.min(width, height) * 0.32
-      const angleStep = (Math.PI * 2) / dimensions
-      
-      // 清空画布
-      ctx.clearRect(0, 0, width, height)
-      
-      // 绘制背景圆（最外层）
-      ctx.beginPath()
-      ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI)
-      ctx.setFillStyle('#f8f9ff')
-      ctx.fill()
-      
-      // 绘制背景网格（5层同心圆）
-      const levels = [0.2, 0.4, 0.6, 0.8, 1.0]
-      levels.forEach((level, idx) => {
-        ctx.beginPath()
-        ctx.arc(centerX, centerY, radius * level, 0, 2 * Math.PI)
-        if (idx === 4) {
-          ctx.setStrokeStyle('#c5cae9')
-          ctx.setLineWidth(2)
-        } else {
-          ctx.setStrokeStyle('#e8eaf6')
-          ctx.setLineWidth(1)
-        }
-        ctx.stroke()
-      })
-      
-      // 绘制轴线和标签
-      for (let i = 0; i < dimensions; i++) {
-        const angle = i * angleStep - Math.PI / 2
-        const x = centerX + radius * Math.cos(angle)
-        const y = centerY + radius * Math.sin(angle)
-        
-        // 轴线
-        ctx.beginPath()
-        ctx.moveTo(centerX, centerY)
-        ctx.lineTo(x, y)
-        ctx.setStrokeStyle('#c5cae9')
-        ctx.setLineWidth(1)
-        ctx.stroke()
-        
-        // 标签背景
-        const labelText = data.indicator[i].name
-        ctx.setFontSize(10)
-        const textWidth = ctx.measureText ? ctx.measureText(labelText).width : 40
-        
-        // 根据位置调整标签位置
-        let labelX, labelY
-        const angleDeg = (angle * 180 / Math.PI)
-        if (angleDeg >= -45 && angleDeg < 45) {
-          // 右侧
-          labelX = x + 8
-          labelY = y + 4
-        } else if (angleDeg >= 45 && angleDeg < 135) {
-          // 下方
-          labelX = x - textWidth / 2
-          labelY = y + 16
-        } else if (angleDeg >= -135 && angleDeg < -45) {
-          // 上方
-          labelX = x - textWidth / 2
-          labelY = y - 6
-        } else {
-          // 左侧
-          labelX = x - textWidth - 8
-          labelY = y + 4
-        }
-        
-        // 绘制标签
-        ctx.setFillStyle('#5c6bc0')
-        ctx.fillText(labelText, labelX, labelY)
-      }
-      
-      // 绘制数据区域（渐变填充）
-      // 先绘制半透明填充
-      ctx.beginPath()
-      for (let i = 0; i <= dimensions; i++) {
-        const angle = i * angleStep - Math.PI / 2
-        const value = (values[i % values.length] || 0) / 100
-        const pointRadius = Math.max(value * radius, 8)  // 最小8像素
-        const x = centerX + pointRadius * Math.cos(angle)
-        const y = centerY + pointRadius * Math.sin(angle)
-        if (i === 0) ctx.moveTo(x, y)
-        else ctx.lineTo(x, y)
-      }
-      ctx.closePath()
-      
-      // 渐变填充
-      const gradient = ctx.createLinearGradient(centerX - radius, centerY - radius, centerX + radius, centerY + radius)
-      gradient.addColorStop(0, 'rgba(92, 107, 192, 0.4)')
-      gradient.addColorStop(1, 'rgba(63, 81, 181, 0.25)')
-      ctx.setFillStyle(gradient)
-      ctx.fill()
-      
-      // 边框
-      ctx.beginPath()
-      for (let i = 0; i <= dimensions; i++) {
-        const angle = i * angleStep - Math.PI / 2
-        const value = (values[i % values.length] || 0) / 100
-        const pointRadius = Math.max(value * radius, 8)
-        const x = centerX + pointRadius * Math.cos(angle)
-        const y = centerY + pointRadius * Math.sin(angle)
-        if (i === 0) ctx.moveTo(x, y)
-        else ctx.lineTo(x, y)
-      }
-      ctx.closePath()
-      ctx.setStrokeStyle('#3f51b5')
-      ctx.setLineWidth(2.5)
-      ctx.stroke()
-      
-      // 绘制数据点
-      for (let i = 0; i < dimensions; i++) {
-        const angle = i * angleStep - Math.PI / 2
-        const value = (values[i] || 0) / 100
-        const pointRadius = Math.max(value * radius, 8)
-        const x = centerX + pointRadius * Math.cos(angle)
-        const y = centerY + pointRadius * Math.sin(angle)
-        
-        // 外圈
-        ctx.beginPath()
-        ctx.arc(x, y, 6, 0, 2 * Math.PI)
-        ctx.setFillStyle('#fff')
-        ctx.fill()
-        ctx.setStrokeStyle('#3f51b5')
-        ctx.setLineWidth(2)
-        ctx.stroke()
-        
-        // 内圈（根据情绪强度变色）
-        ctx.beginPath()
-        ctx.arc(x, y, 3, 0, 2 * Math.PI)
-        if (value >= 50) {
-          ctx.setFillStyle('#f44336')  // 红色-强
-        } else if (value >= 30) {
-          ctx.setFillStyle('#ff9800')  // 橙色-中
-        } else {
-          ctx.setFillStyle('#4caf50')  // 绿色-弱
-        }
-        ctx.fill()
-      }
-      
-      // 执行绘制
-      ctx.draw(false, () => {
-        console.log('雷达图绘制完成')
-      })
-    } catch (e) {
-      console.error('渲染雷达图异常:', e)
+    });
+    
+    if (dimensions.length === 0) return null;
+    
+    return {
+      indicator: dimensions.map(dim => ({ name: dim, max: 100 })),
+      series: [{
+        name: '情绪维度',
+        type: 'radar',
+        data: [{ value: values, name: '当前情绪' }]
+      }]
+    };
+  },
+
+  // 绘制雷达图
+  drawRadarChart: function() {
+    if (!this.data.showRadar || !this.data.radarData) {
+      return;
     }
+    
+    const query = wx.createSelectorQuery();
+    query.select('#radarCanvas').boundingClientRect();
+    query.exec((res) => {
+      if (!res || !res[0] || res[0].width === 0) {
+        const retry = (this.data.radarRetryCount || 0) + 1;
+        if (retry <= 3) {
+          this.setData({ radarRetryCount: retry });
+          setTimeout(() => this.drawRadarChart(), 300);
+        }
+        return;
+      }
+      
+      const ctx = wx.createCanvasContext('radarCanvas', this);
+      if (ctx) {
+        this.renderRadarChart(ctx, this.data.radarData, res[0].width, res[0].height);
+        this.setData({ radarRetryCount: 0 });
+      }
+    });
+  },
+
+  // 渲染雷达图
+  renderRadarChart: function(ctx, data, width, height) {
+    const dimensions = data.indicator.length;
+    const values = data.series[0].data[0].value;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.min(width, height) * 0.32;
+    const angleStep = (Math.PI * 2) / dimensions;
+    
+    ctx.clearRect(0, 0, width, height);
+    
+    // 绘制背景网格
+    const levels = [0.2, 0.4, 0.6, 0.8, 1.0];
+    levels.forEach((level, idx) => {
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius * level, 0, 2 * Math.PI);
+      ctx.setStrokeStyle(idx === 4 ? '#c5cae9' : '#e8eaf6');
+      ctx.setLineWidth(idx === 4 ? 2 : 1);
+      ctx.stroke();
+    });
+    
+    // 绘制轴线和标签
+    for (let i = 0; i < dimensions; i++) {
+      const angle = i * angleStep - Math.PI / 2;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+      
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(x, y);
+      ctx.setStrokeStyle('#c5cae9');
+      ctx.stroke();
+      
+      ctx.setFontSize(10);
+      ctx.setFillStyle('#5c6bc0');
+      ctx.fillText(data.indicator[i].name, x + (x > centerX ? 5 : -25), y + (y > centerY ? -5 : 15));
+    }
+    
+    // 绘制数据区域
+    ctx.beginPath();
+    for (let i = 0; i <= dimensions; i++) {
+      const angle = i * angleStep - Math.PI / 2;
+      const value = (values[i % values.length] || 0) / 100;
+      const x = centerX + radius * value * Math.cos(angle);
+      const y = centerY + radius * value * Math.sin(angle);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.setFillStyle('rgba(92, 107, 192, 0.3)');
+    ctx.fill();
+    ctx.setStrokeStyle('#3f51b5');
+    ctx.setLineWidth(2);
+    ctx.stroke();
+    
+    // 绘制数据点
+    for (let i = 0; i < dimensions; i++) {
+      const angle = i * angleStep - Math.PI / 2;
+      const value = (values[i] || 0) / 100;
+      const x = centerX + radius * value * Math.cos(angle);
+      const y = centerY + radius * value * Math.sin(angle);
+      
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, 2 * Math.PI);
+      ctx.setFillStyle('#fff');
+      ctx.fill();
+      ctx.setStrokeStyle('#3f51b5');
+      ctx.setLineWidth(2);
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, 2 * Math.PI);
+      ctx.setFillStyle(value >= 0.5 ? '#f44336' : (value >= 0.3 ? '#ff9800' : '#4caf50'));
+      ctx.fill();
+    }
+    
+    ctx.draw();
   },
 
   onSelectSchool(e) {
-    const index = Number(e.currentTarget.dataset.index)
-    const schoolResponses = this.data.actionData.schoolResponses || []
-    const selected = schoolResponses[index]
-    if (!selected) return
+    const index = Number(e.currentTarget.dataset.index);
+    const schoolResponses = this.data.actionData.schoolResponses || [];
+    const selected = schoolResponses[index];
+    if (!selected) return;
     this.setData({
       'actionData.selectedSchoolIndex': index,
       'actionData.selectedAction': selected.action || null
-    })
-    wx.showToast({ title: `已选择${selected.schoolName}`, icon: 'none' })
-  },
-
-  showSaveSuccessDialog(result) {
-    const checkinStatus = result?.checkinStatus || {}
-    const content = checkinStatus.isFirstCheckInToday
-      ? `今日打卡成功，已累计浇水 ${checkinStatus.totalCheckins} 次。\n\n你现在可以查看这篇日记和AI反馈，或继续记录。`
-      : '这篇日记已保存。\n\n你现在可以查看这篇日记和AI反馈，或继续记录。'
-
-    wx.showModal({
-      title: result.cloudSynced ? '保存成功（已云同步）' : '保存成功（仅本地）',
-      content,
-      confirmText: '查看我的日记',
-      cancelText: '继续记录',
-      success: (res) => {
-        if (res.confirm) {
-          wx.navigateTo({
-            url: '/pages/list/list'
-          })
-          return
-        }
-        this.setData({
-          content: '',
-          actionData: {
-            emotions: {},
-            emotionsList: [],
-            dominantEmotion: '',
-            analyzedAt: '',
-            schoolResponses: [],
-            selectedSchoolIndex: null,
-            selectedAction: null
-          },
-          radarData: null,
-          showRadar: false,
-          radarRetryCount: 0
-        })
-      }
-    })
+    });
+    wx.showToast({ title: `已选择${selected.schoolName}`, icon: 'none' });
   },
 
   async onSave() {
-    const { content, actionData, isSaving } = this.data
+    const { content, actionData, isSaving } = this.data;
+    
     if (!content.trim()) {
-      wx.showToast({ title: '请先输入日记内容', icon: 'none' })
-      return
+      wx.showToast({ title: '请先输入日记内容', icon: 'none' });
+      return;
     }
-    if (isSaving) return
+    
+    if (isSaving) return;
 
-    this.setData({ isSaving: true })
-    wx.showLoading({ title: '保存中...', mask: true })
+    this.setData({ isSaving: true });
+    wx.showLoading({ title: '保存中...', mask: true });
 
     try {
-      const result = await diaryUtils.saveDiary(content, '', actionData)
-      wx.hideLoading()
-      this.setData({ isSaving: false })
+      const result = await diaryUtils.saveDiary(content, '', actionData);
+      wx.hideLoading();
+      this.setData({ isSaving: false });
 
-      if (!result || !result.success) {
-        wx.showToast({ title: '保存失败', icon: 'none' })
-        return
-      }
-
-      const checkinStatus = result.checkinStatus || {}
-      if (checkinStatus.isFirstCheckInToday) {
-        this.setData({
-          showCheckinAnimation: true,
-          checkinMessage: `今日打卡成功，已浇水 ${checkinStatus.totalCheckins} 次，继续坚持！`
-        })
+      if (result) {
+        wx.showToast({ title: '保存成功', icon: 'success' });
         setTimeout(() => {
-          this.setData({ showCheckinAnimation: false })
-        }, 2000)
+          wx.navigateBack();
+        }, 1500);
+      } else {
+        wx.showToast({ title: '保存失败', icon: 'none' });
       }
-      this.showSaveSuccessDialog(result)
     } catch (error) {
-      wx.hideLoading()
-      this.setData({ isSaving: false })
-      wx.showToast({ title: '保存失败', icon: 'none' })
-      console.error('保存失败:', error)
+      wx.hideLoading();
+      this.setData({ isSaving: false });
+      wx.showToast({ title: '保存失败', icon: 'none' });
+      console.error('保存失败:', error);
     }
   },
 
   onClearContent() {
-    const { content } = this.data
+    const { content } = this.data;
     
     if (content.trim()) {
       wx.showModal({
@@ -602,23 +418,23 @@ Page({
         content: '确定要清空当前输入的内容吗？',
         success: (res) => {
           if (res.confirm) {
-            this.setData({
-              content: '',
+            this.setData({ 
+              content: '', 
               actionData: {
                 emotions: {},
                 emotionsList: [],
                 dominantEmotion: '',
                 analyzedAt: '',
                 schoolResponses: [],
-                selectedSchoolIndex: null,
+                selectedSchoolIndex: 0,
                 selectedAction: null
               },
               radarData: null,
               showRadar: false
-            })
+            });
           }
         }
-      })
+      });
     }
   }
 })

@@ -10,7 +10,7 @@ console.log('🚀 [CLOUD] 云函数 analyzeDiary 已更新 v2.2 - 使用 Silicon
 const DEEPSEEK_CONFIG = {
   baseURL: 'https://api.siliconflow.cn',
   apiKey: 'sk-fpmylsbjumnjntoibjwuxvuhdqeowxvasencojuqhozamuem',
-  model: 'Pro/zai-org/GLM-4.7'
+  model: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B'
 }
 
 const EMOTION_KEYWORDS = {
@@ -149,7 +149,48 @@ async function analyzeByDeepSeek(content) {
 }
 
 // 构建 DeepSeek 系统提示词 - 根据情绪上下文定制
-function buildDeepSeekSystemPrompt(dominantEmotion, scores) {
+async function analyzeDiaryWithHunyuan(content) {
+  try {
+    const model = wx.cloud.extend.AI.createModel('hunyuan');
+    const preScores = analyzeByPatterns(content);
+    const dominant = inferDominantEmotion(preScores);
+    
+    const prompt = buildDeepSeekSystemPrompt(dominant, preScores);
+    const userPrompt = buildDeepSeekUserPrompt(content, dominant, preScores);
+
+    const response = await model.invoke({
+      messages: [
+        { role: 'system', content: prompt },
+        { role: 'user', content: userPrompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 2000
+    });
+
+    const parsed = safeParseJSON(response.content);
+    if (!parsed) {
+      throw new Error('AI返回格式无法解析为JSON');
+    }
+
+    const aiScores = parsed.emotionScores || {};
+    const hasValidScores = Object.values(aiScores).some(v => v > 0);
+    const normalizedScores = hasValidScores ? normalizeEmotionScores(aiScores) : preScores;
+    
+    const finalDominant = parsed.dominantEmotion || dominant;
+    const normalizedSchoolResponses = normalizeSchoolResponses(parsed.schoolResponses, finalDominant, content);
+
+    return {
+      scores: normalizedScores,
+      emotions: normalizedScores,
+      dominantEmotion: finalDominant,
+      summary: parsed.summary || content.slice(0, 90),
+      schoolResponses: normalizedSchoolResponses
+    };
+  } catch (error) {
+    console.error('混元模型调用失败:', error);
+    throw error;
+  }
+}function buildDeepSeekSystemPrompt(dominantEmotion, scores) {
   const emotionDescriptions = {
     '悲伤': '用户当前情绪偏向悲伤/失落，请用理解、安慰的语气，给出温暖的回应',
     '愤怒': '用户当前情绪偏向愤怒/不满，请用平和、理性的语气，帮助用户冷静分析',
