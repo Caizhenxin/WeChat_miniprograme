@@ -1,4 +1,19 @@
-/**app.wxss**/
+/**app.wxss - 全局样式，暖白纸质美学**/
+page {
+  --warm-bg: #FDF8F2;
+  --warm-card: #FFFCF7;
+  --warm-border: #EADBC6;
+  --warm-accent: #D4B595;
+  --warm-accent-deep: #C49A76;
+  --warm-text: #2B3A42;
+  --warm-text-secondary: #5C4F42;
+  --warm-text-light: #8B7E74;
+  --warm-text-hint: #B5A99B;
+  --warm-primary: #D4B595;
+  --warm-primary-light: #FDF0E4;
+  background-color: #FDF8F2;
+}
+
 .container {
   height: 100%;
   display: flex;
@@ -7,4 +22,4 @@
   justify-content: space-between;
   padding: 200rpx 0;
   box-sizing: border-box;
-} 
+}

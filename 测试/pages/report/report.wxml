@@ -1,6 +1,6 @@
 <!--pages/report/report.wxml-->
 <view class="report-page">
-  <navigation-bar title="情绪周报" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+  <navigation-bar title="情绪周报" back="{{true}}" color="#2B3A42" background="#FDF8F2"></navigation-bar>
   
   <scroll-view class="scroll-area" scroll-y>
     <view class="tree-section">

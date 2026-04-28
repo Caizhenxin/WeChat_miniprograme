@@ -1,70 +1,128 @@
-<!--index.wxml-->
+<navigation-bar title="微光日记" back="{{false}}" color="#2B3A42" background="#FDF8F2"></navigation-bar>
+
 <view class="page">
-  <!-- 顶部导航栏 -->
-  <navigation-bar title="微光日记" back="{{false}}" color="black" background="#FFF"></navigation-bar>
+  <scroll-view class="content-wrapper" scroll-y>
 
-  <!-- 个人中心按钮 -->
-  <view class="profile-btn" bindtap="goToProfile">
-    <text class="profile-icon">👤</text>
-  </view>
-
-  <!-- 主要内容 -->
-  <scroll-view class="scroll-area" scroll-y>
-    <view class="container">
-      <!-- 标题区域 -->
-      <view class="header">
-        <image class="logo" src="/images/logo.png" mode="aspectFit"></image>
-        <view class="title">
-          <text class="main-title">微光日记</text>
-          <text class="subtitle">Glimmer Journal</text>
-        </view>
+    <!-- ====== 输入模式 ====== -->
+    <view wx:if="{{!showResult}}" class="input-section">
+      <view class="welcome-tip">
+        <view class="tip-icon">🌙</view>
+        <text class="tip-greeting">{{greeting}}</text>
+        <text class="tip-text">写下此刻的感受，我会从四种不同的心理学视角\n为你提供理解和建议</text>
       </view>
 
-      <!-- 欢迎描述 -->
-      <view class="welcome-desc">
-        <text class="desc-text">
-          用生活记录作为入口，<br/>
-          用心理流派作为理解框架，<br/>
-          用5分钟微行动作为出口。
-        </text>
-      </view>
-
-      <!-- 特色功能卡片 -->
-      <view class="features">
-        <view class="feature-card">
-          <image class="feature-icon" src="/images/feature1.png" mode="aspectFit"></image>
-          <view class="feature-content">
-            <text class="feature-title">多流派解读</text>
-            <text class="feature-desc"> 从CBT、ACT、积极心理学等多个视角理解你的情绪</text>
-          </view>
+      <view class="input-card">
+        <textarea
+          class="chat-input"
+          placeholder="比如：「今天工作有点累，但同事帮我解决了难题，心里暖暖的...」"
+          value="{{userInput}}"
+          bindinput="onInput"
+          maxlength="1000"
+          auto-height
+        />
+        <view class="input-footer">
+          <text class="word-count">{{userInput.length}}/1000</text>
+          <button class="analyze-btn" bindtap="onAnalyze" disabled="{{isAnalyzing || !userInput}}">
+            {{isAnalyzing ? '分析中...' : '开始分析'}}
+          </button>
         </view>
-
-        <view class="feature-card">
-          <image class="feature-icon" src="/images/feature2.png" mode="aspectFit"></image>
-          <view class="feature-content">
-            <text class="feature-title">5分钟微行动</text>
-            <text class="feature-desc"> 每种流派配以可立即执行的小行动，温和促进改变</text>
-          </view>
-        </view>
-
-        <view class="feature-card">
-          <image class="feature-icon" src="/images/feature3.png" mode="aspectFit"></image>
-          <view class="feature-content">
-            <text class="feature-title">雷达图可视化</text>
-            <text class="feature-desc"> 直观展示十种情绪维度的分布，洞察内心状态</text>
-          </view>
-        </view>
-      </view>
-
-      <!-- 开始按钮 -->
-      <view class="start-btn-container">
-        <button class="start-btn" bindtap="goToDiary">开始体验</button>
-      </view>
-
-      <!-- 底部提示 -->
-      <view class="footer-tip">
-        <text class="tip-text">温柔陪伴，不定义你</text>
       </view>
     </view>
+
+    <!-- ====== 结果模式 ====== -->
+    <view wx:else class="result-section">
+      <view class="radar-card">
+        <text class="section-title">📊 情绪雷达图</text>
+        <canvas canvas-id="radarCanvas" class="radar-chart" style="width:100%;height:350px;"></canvas>
+      </view>
+
+      <view class="select-guide" wx:if="{{!selectedSchool}}">
+        <text class="guide-title">👇 点击流派卡片，选择最贴近你感受的一种</text>
+        <text class="guide-sub">每种流派会提供不同的5分钟微行动建议</text>
+      </view>
+
+      <view class="schools-card">
+        <text class="section-title">🧠 四大流派解读</text>
+        <view
+          class="school-item {{selectedSchool === item.schoolKey ? 'school-active' : ''}}"
+          wx:for="{{schoolResponses}}"
+          wx:key="schoolKey"
+          data-key="{{item.schoolKey}}"
+          bindtap="onSelectSchool"
+        >
+          <view class="school-header">
+            <text class="school-name">{{item.schoolName}}</text>
+            <text class="school-tag">{{item.schoolTag}}</text>
+          </view>
+          <text class="school-response">{{item.response}}</text>
+          <view class="school-select-hint" wx:if="{{selectedSchool !== item.schoolKey}}">
+            <text>点击选择 →</text>
+          </view>
+          <view class="school-selected-badge" wx:else>
+            <text>✓ 已选择</text>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{selectedAction}}" class="action-card">
+        <text class="section-title">⏱ 你的5分钟微行动</text>
+        <view class="action-content">
+          <view class="action-head">
+            <text class="action-name">{{selectedAction.name}}</text>
+            <text class="action-duration">⏱ {{selectedAction.duration}}分钟</text>
+          </view>
+          <view class="action-steps">
+            <text class="step-item" wx:for="{{selectedAction.steps}}" wx:key="*this">
+              {{index + 1}}. {{item}}
+            </text>
+          </view>
+          <view class="action-tip-block">
+            <text class="action-tip-icon">💡</text>
+            <text class="action-tip-text">{{selectedAction.tip}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="button-area">
+        <view class="button-group">
+          <button class="save-btn" bindtap="onSave" disabled="{{isSaving}}">
+            {{isSaving ? '保存中...' : '💾 保存并完成'}}
+          </button>
+          <button class="reset-btn" bindtap="onReset">
+            {{isSaving ? '...' : '📝 记录新的'}}
+          </button>
+        </view>
+      </view>
+    </view>
+
   </scroll-view>
+
+  <view class="tab-bar">
+    <view class="tab-item {{currentTab === 'home' ? 'active' : ''}}" bindtap="goToHome">
+      <text class="tab-icon">🏠</text>
+      <text class="tab-text">首页</text>
+    </view>
+    <view class="tab-item {{currentTab === 'learn' ? 'active' : ''}}" bindtap="goToLearn">
+      <text class="tab-icon">📚</text>
+      <text class="tab-text">流派学习</text>
+      <view class="progress-dot" wx:if="{{learnProgress < 100}}">{{learnProgress}}%</view>
+    </view>
+    <view class="tab-item {{currentTab === 'history' ? 'active' : ''}}" bindtap="goToHistory">
+      <text class="tab-icon">📖</text>
+      <text class="tab-text">历史</text>
+    </view>
+    <view class="tab-item {{currentTab === 'me' ? 'active' : ''}}" bindtap="goToProfile">
+      <text class="tab-icon">👤</text>
+      <text class="tab-text">我的</text>
+    </view>
+  </view>
+
+  <!-- 打卡浇水动画 -->
+  <view class="checkin-mask" wx:if="{{showCheckinAnimation}}" bindtap="onCheckinMaskTap">
+    <view class="tree-card pop-in">
+      <text class="tree-emoji">🌳</text>
+      <text class="water-drop">💧</text>
+      <text class="tree-text">{{checkinMessage}}</text>
+    </view>
+  </view>
 </view>

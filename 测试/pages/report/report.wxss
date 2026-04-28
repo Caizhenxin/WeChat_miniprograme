@@ -1,277 +1,88 @@
 /* pages/report/report.wxss */
 page {
   height: 100vh;
-  background-color: #f8f9ff;
+  background-color: #FDF8F2;
 }
 .scroll-area {
-  flex: 1;
-  overflow-y: auto;
-  padding: 0 30rpx 40rpx;
-  box-sizing: border-box;
+  flex: 1; overflow-y: auto; padding: 0 30rpx 40rpx; box-sizing: border-box;
 }
 
-.tree-section {
-  margin-top: 24rpx;
-  margin-bottom: 30rpx;
-}
-
-.tree-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 14rpx;
-}
-
-.tree-title {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #2d3748;
-}
-
-.tree-status {
-  font-size: 22rpx;
-  color: #3b82f6;
-  background: #e7f0ff;
-  padding: 4rpx 12rpx;
-  border-radius: 999rpx;
-}
-
+.tree-section { margin-top: 24rpx; margin-bottom: 30rpx; }
+.tree-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14rpx; }
+.tree-title { font-size: 28rpx; font-weight: 600; color: #2B3A42; }
+.tree-status { font-size: 22rpx; color: #8B5E3C; background: #FDF0E4; padding: 4rpx 12rpx; border-radius: 999rpx; }
 .tree-card {
-  display: flex;
-  align-items: center;
-  gap: 18rpx;
-  background-color: #ffffff;
-  border-radius: 20rpx;
-  padding: 24rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+  display: flex; align-items: center; gap: 18rpx;
+  background-color: #FFFCF7; border-radius: 20rpx; padding: 24rpx;
+  box-shadow: 0 4rpx 12rpx rgba(180,150,120,0.1);
+  border: 1rpx solid #EADBC6;
 }
+.tree-emoji { font-size: 72rpx; }
+.tree-info { flex: 1; }
+.tree-name { display: block; font-size: 28rpx; color: #2B3A42; font-weight: 600; margin-bottom: 6rpx; }
+.tree-count { display: block; font-size: 24rpx; color: #8B7E74; margin-bottom: 10rpx; }
+.tree-progress-bar { height: 12rpx; background: #FDF0E4; border-radius: 999rpx; overflow: hidden; }
+.tree-progress-inner { height: 100%; background: linear-gradient(90deg, #C49A76 0%, #D4B595 100%); }
 
-.tree-emoji {
-  font-size: 72rpx;
-}
+.report-header { padding: 30rpx 0; text-align: center; }
+.report-title { font-size: 36rpx; font-weight: 700; color: #2B3A42; display: block; margin-bottom: 8rpx; }
+.report-date { font-size: 26rpx; color: #8B7E74; }
 
-.tree-info {
-  flex: 1;
-}
-
-.tree-name {
-  display: block;
-  font-size: 28rpx;
-  color: #2b355d;
-  font-weight: 600;
-  margin-bottom: 6rpx;
-}
-
-.tree-count {
-  display: block;
-  font-size: 24rpx;
-  color: #667296;
-  margin-bottom: 10rpx;
-}
-
-.tree-progress-bar {
-  height: 12rpx;
-  background: #edf2ff;
-  border-radius: 999rpx;
-  overflow: hidden;
-}
-
-.tree-progress-inner {
-  height: 100%;
-  background: linear-gradient(90deg, #36c66f 0%, #2ca866 100%);
-}
-
-/* 头部 */
-.report-header {
-  padding: 30rpx 0;
-  text-align: center;
-}
-.report-title {
-  font-size: 36rpx;
-  font-weight: 700;
-  color: #2d3748;
-  display: block;
-  margin-bottom: 8rpx;
-}
-.report-date {
-  font-size: 26rpx;
-  color: #6b7280;
-}
-
-/* 核心指标 */
-.metrics-section {
-  display: flex;
-  gap: 20rpx;
-  margin-bottom: 30rpx;
-}
+.metrics-section { display: flex; gap: 20rpx; margin-bottom: 30rpx; }
 .metric-card {
-  flex: 1;
-  background-color: white;
-  border-radius: 20rpx;
-  padding: 24rpx;
-  text-align: center;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+  flex: 1; background-color: #FFFCF7; border-radius: 20rpx; padding: 24rpx;
+  text-align: center; box-shadow: 0 4rpx 12rpx rgba(180,150,120,0.1);
+  border: 1rpx solid #EADBC6;
 }
-.metric-value {
-  font-size: 40rpx;
-  font-weight: 700;
-  color: #667eea;
-  display: block;
-  margin-bottom: 8rpx;
-}
-.metric-value.positive {
-  color: #10b981;
-}
-.metric-label {
-  font-size: 24rpx;
-  color: #6b7280;
-}
+.metric-value { font-size: 40rpx; font-weight: 700; color: #C49A76; display: block; margin-bottom: 8rpx; }
+.metric-value.positive { color: #8B5E3C; }
+.metric-label { font-size: 24rpx; color: #8B7E74; }
 
-/* 区块 */
-.section {
-  margin-bottom: 30rpx;
-}
-.section-title {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #2d3748;
-  display: block;
-  margin-bottom: 16rpx;
-}
+.section { margin-bottom: 30rpx; }
+.section-title { font-size: 28rpx; font-weight: 600; color: #2B3A42; display: block; margin-bottom: 16rpx; }
 
-/* 情绪分布 */
 .emotion-list {
-  background-color: white;
-  border-radius: 20rpx;
-  padding: 24rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+  background-color: #FFFCF7; border-radius: 20rpx; padding: 24rpx;
+  box-shadow: 0 4rpx 12rpx rgba(180,150,120,0.1);
+  border: 1rpx solid #EADBC6;
 }
-.emotion-item {
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-  margin-bottom: 16rpx;
-}
-.emotion-item:last-child {
-  margin-bottom: 0;
-}
-.emotion-name {
-  font-size: 26rpx;
-  color: #4b5563;
-  width: 120rpx;
-}
-.emotion-bar-container {
-  flex: 1;
-  height: 16rpx;
-  background-color: #f3f4f6;
-  border-radius: 8rpx;
-  overflow: hidden;
-}
-.emotion-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-  border-radius: 8rpx;
-}
-.emotion-count {
-  font-size: 24rpx;
-  color: #9ca3af;
-  width: 80rpx;
-  text-align: right;
-}
+.emotion-item { display: flex; align-items: center; gap: 16rpx; margin-bottom: 16rpx; }
+.emotion-item:last-child { margin-bottom: 0; }
+.emotion-name { font-size: 26rpx; color: #5C4F42; width: 120rpx; }
+.emotion-bar-container { flex: 1; height: 16rpx; background-color: #FDF0E4; border-radius: 8rpx; overflow: hidden; }
+.emotion-bar { height: 100%; background: linear-gradient(90deg, #D4B595 0%, #C49A76 100%); border-radius: 8rpx; }
+.emotion-count { font-size: 24rpx; color: #B5A99B; width: 80rpx; text-align: right; }
 
-/* 评估卡片 */
 .assessment-card {
-  background-color: white;
-  border-radius: 20rpx;
-  padding: 30rpx;
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+  background-color: #FFFCF7; border-radius: 20rpx; padding: 30rpx;
+  display: flex; align-items: center; gap: 20rpx;
+  box-shadow: 0 4rpx 12rpx rgba(180,150,120,0.1);
+  border: 1rpx solid #EADBC6;
 }
-.assessment-card.flourishing {
-  border-left: 8rpx solid #10b981;
-}
-.assessment-card.approaching {
-  border-left: 8rpx solid #f59e0b;
-}
-.assessment-card.needing-attention {
-  border-left: 8rpx solid #ef4444;
-}
-.assessment-icon {
-  font-size: 48rpx;
-}
-.assessment-content {
-  flex: 1;
-}
-.assessment-title {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #2d3748;
-  display: block;
-  margin-bottom: 8rpx;
-}
-.assessment-desc {
-  font-size: 26rpx;
-  color: #6b7280;
-  line-height: 1.5;
-}
+.assessment-card.flourishing { border-left: 8rpx solid #C49A76; }
+.assessment-card.approaching { border-left: 8rpx solid #D4B595; }
+.assessment-card.needing-attention { border-left: 8rpx solid #E0C0A0; }
+.assessment-icon { font-size: 48rpx; }
+.assessment-content { flex: 1; }
+.assessment-title { font-size: 28rpx; font-weight: 600; color: #2B3A42; display: block; margin-bottom: 8rpx; }
+.assessment-desc { font-size: 26rpx; color: #8B7E74; line-height: 1.5; }
 
-/* 建议 */
 .suggestions {
-  background-color: white;
-  border-radius: 20rpx;
-  padding: 24rpx;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+  background-color: #FFFCF7; border-radius: 20rpx; padding: 24rpx;
+  box-shadow: 0 4rpx 12rpx rgba(180,150,120,0.1);
+  border: 1rpx solid #EADBC6;
 }
-.suggestion-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12rpx;
-  margin-bottom: 16rpx;
-}
-.suggestion-item:last-child {
-  margin-bottom: 0;
-}
-.suggestion-bullet {
-  font-size: 28rpx;
-  color: #667eea;
-}
-.suggestion-text {
-  font-size: 26rpx;
-  color: #4b5563;
-  line-height: 1.6;
-  flex: 1;
-}
+.suggestion-item { display: flex; align-items: flex-start; gap: 12rpx; margin-bottom: 16rpx; }
+.suggestion-item:last-child { margin-bottom: 0; }
+.suggestion-bullet { font-size: 28rpx; color: #C49A76; }
+.suggestion-text { font-size: 26rpx; color: #5C4F42; line-height: 1.6; flex: 1; }
 
-/* 空状态 */
-.empty-state {
-  text-align: center;
-  padding: 80rpx 30rpx;
-}
-.empty-icon {
-  font-size: 80rpx;
-  display: block;
-  margin-bottom: 20rpx;
-}
-.empty-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #2d3748;
-  display: block;
-  margin-bottom: 12rpx;
-}
-.empty-desc {
-  font-size: 26rpx;
-  color: #6b7280;
-  display: block;
-  margin-bottom: 30rpx;
-}
+.empty-state { text-align: center; padding: 80rpx 30rpx; }
+.empty-icon { font-size: 80rpx; display: block; margin-bottom: 20rpx; }
+.empty-title { font-size: 32rpx; font-weight: 600; color: #2B3A42; display: block; margin-bottom: 12rpx; }
+.empty-desc { font-size: 26rpx; color: #8B7E74; display: block; margin-bottom: 30rpx; }
 .empty-btn {
-  width: 200rpx;
-  height: 70rpx;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  font-size: 28rpx;
-  border-radius: 35rpx;
+  width: 200rpx; height: 70rpx;
+  background: linear-gradient(135deg, #D4B595 0%, #C49A76 100%);
+  color: white; font-size: 28rpx; border-radius: 35rpx;
 }

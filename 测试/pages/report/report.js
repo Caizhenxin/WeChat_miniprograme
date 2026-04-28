@@ -214,8 +214,6 @@ Page({
   },
 
   goToDiary() {
-    wx.navigateTo({
-      url: '/pages/diary/diary'
-    })
+    wx.navigateTo({ url: '/pages/index/index' })
   }
 })

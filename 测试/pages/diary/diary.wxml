@@ -1,30 +1,20 @@
 <view class="diary-page">
-  <navigation-bar title="记录与分析" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+  <navigation-bar title="记录与分析" back="{{true}}" color="#2B3A42" background="#FDF8F2"></navigation-bar>
 
   <scroll-view class="scroll-area" scroll-y>
     <view class="privacy-banner">
       <text class="privacy-title">🔒 隐私提示</text>
       <text class="privacy-desc">默认仅保存到本地设备。开启云同步后才会上传云端。</text>
     </view>
-    <view wx:if="{{analysisResult}}">
-      <text>情绪分析结果：{{analysisResult.emotion}}</text>
-      <text>分析建议：{{analysisResult.suggestion}}</text>
-    </view>
 
-    <view wx:else>
-      <text>暂无分析结果，点击下方按钮分析日记</text>
-    </view>
+    <!-- 步骤1：了解流派 -->
     <view class="step-card">
       <view class="step-title">步骤1：先了解四大流派</view>
-      <view class="step-list">
-        <view class="step-item" wx:for="{{coreSchools}}" wx:key="key">
-          <text class="step-name">{{item.name}}</text>
-          <text class="step-focus">{{item.focus}}</text>
-        </view>
-      </view>
-      <button class="light-btn" bindtap="goToSchoolsPage">查看完整科普</button>
+      <text class="step-desc">建议先去流派学习页了解四种心理学视角，这样可以更好地选择适合自己的回应。</text>
+      <button class="light-btn" bindtap="goToSchoolsPage">查看流派科普</button>
     </view>
 
+    <!-- 步骤2：输入日记并分析 -->
     <view class="step-card">
       <view class="step-title">步骤2：输入日记并分析</view>
       <textarea
@@ -44,6 +34,7 @@
       </button>
     </view>
 
+    <!-- 步骤3：查看流派回应并选择 -->
     <view class="step-card" wx:if="{{showRadar || actionData.schoolResponses.length}}">
       <view class="step-title">步骤3：查看四流派AI回应并选择最有帮助的一条</view>
       <view class="radar-section" wx:if="{{showRadar}}">
@@ -75,13 +66,14 @@
           <text class="school-response">{{item.response}}</text>
         </view>
         <view class="empty-tip" wx:if="{{!actionData.schoolResponses.length}}">
-          <text>正在准备流派回应，请稍后再点一次“分析日记”</text>
+          <text>正在准备流派回应，请稍后再点一次"分析日记"</text>
         </view>
       </view>
     </view>
 
+    <!-- 步骤4：微行动 -->
     <view class="step-card" wx:if="{{actionData.selectedAction}}">
-      <view class="step-title">步骤4：选择并执行微行动建议</view>
+      <view class="step-title">步骤4：执行微行动建议</view>
       <view class="action-card">
         <text class="action-name">{{actionData.selectedAction.name}}</text>
         <text class="action-duration">预计 {{actionData.selectedAction.duration}} 分钟</text>
@@ -99,11 +91,12 @@
     </button>
 
     <view class="empty-tip" wx:if="{{!isAnalyzing && !actionData.schoolResponses.length && content}}">
-      <text>点击“分析日记”后，将生成四大流派的差异化回应</text>
+      <text>点击"分析日记"后，将生成四大流派的差异化回应</text>
     </view>
   </scroll-view>
 
-  <view class="checkin-mask" wx:if="{{showCheckinAnimation}}">
+  <!-- 打卡浇水动画 -->
+  <view class="checkin-mask" wx:if="{{showCheckinAnimation}}" bindtap="onCheckinMaskTap">
     <view class="tree-card pop-in">
       <text class="tree-emoji">🌳</text>
       <text class="water-drop">💧</text>

@@ -1,22 +1,47 @@
 <view class="schools-page">
-  <navigation-bar title="四大流派科普" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+  <navigation-bar title="流派学习" back="{{true}}" color="black" background="#FFF"></navigation-bar>
 
   <scroll-view class="scroll-area" scroll-y>
+    <!-- 学习进度 -->
+    <view class="progress-card">
+      <view class="progress-header">
+        <text class="progress-title">学习进度</text>
+        <text class="progress-percent">{{learnProgress}}%</text>
+      </view>
+      <view class="progress-bar">
+        <view class="progress-fill" style="width: {{learnProgress}}%"></view>
+      </view>
+      <text class="progress-tip">学习完所有流派，解锁更多洞察</text>
+    </view>
+
+    <!-- 简介 -->
     <view class="intro-card">
       <text class="intro-title">为什么先了解流派？</text>
       <text class="intro-desc">同一段经历在不同心理学视角下，会得到不同关注重点。先理解流派，再分析日记，你会更容易选到真正适合自己的回应。</text>
     </view>
 
-    <view class="school-card" wx:for="{{schools}}" wx:key="key">
+    <!-- 流派卡片 -->
+    <view class="school-card {{expandedSchool === item.key ? 'expanded' : ''}}" wx:for="{{schools}}" wx:key="key" data-key="{{item.key}}" bindtap="toggleExpand">
       <view class="school-head">
         <text class="school-name">{{item.name}}</text>
         <text class="school-tag">{{item.shortTag}}</text>
       </view>
       <text class="school-desc">{{item.description}}</text>
       <text class="school-highlight">{{item.highlight}}</text>
-      <text class="school-suitable">{{item.suitable}}</text>
+      <text class="school-suitable">📌 {{item.suitable}}</text>
+
+      <!-- 可展开的详细内容 -->
+      <view class="school-detail" wx:if="{{expandedSchool === item.key}}">
+        <text class="detail-title">📝 实用技巧</text>
+        <view class="detail-list">
+          <text class="detail-item" wx:for="{{item.tips}}" wx:for-item="tip" wx:key="*this">• {{tip}}</text>
+        </view>
+        <button class="mark-btn" data-key="{{item.key}}" bindtap="markAsLearned" catchtap>标记为已学习</button>
+      </view>
+
+      <view class="expand-icon">{{expandedSchool === item.key ? '收起' : '展开'}}</view>
     </view>
 
-    <button class="enter-btn" bindtap="goToDiary">我已了解，开始写日记</button>
+    <button class="enter-btn" bindtap="goToDiary">开始记录今日感受</button>
   </scroll-view>
 </view>

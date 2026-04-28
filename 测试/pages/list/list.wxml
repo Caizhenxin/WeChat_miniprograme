@@ -1,5 +1,5 @@
 <view class="list-page">
-	<navigation-bar title="我的日记" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+	<navigation-bar title="我的日记" back="{{true}}" color="#2B3A42" background="#FDF8F2"></navigation-bar>
 
 	<scroll-view class="scroll-area" scroll-y>
 		<view class="privacy-card">

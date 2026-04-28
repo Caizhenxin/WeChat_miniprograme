@@ -39,7 +39,7 @@ exports.main = async (event) => {
   }
 
   // 默认使用本地方案，更快响应
-  const useAI = false  // 设为true启用AI
+  const useAI = true  // 设为true启用AI
   
   if (!useAI || !DEEPSEEK_CONFIG.apiKey) {
     console.log('📝 使用本地分析方案')
@@ -377,11 +377,11 @@ function buildFallbackResult(content) {
 
   console.log('🔧 [DEBUG] 最终 scores:', JSON.stringify(scores))
 
-  // 确保所有13个情绪维度都有值
+  // 确保所有13个情绪维度都有值（问题2：未识别的情绪默认为0，不要给5）
   const allEmotions = ['快乐', '悲伤', '愤怒', '恐惧', '焦虑', '平静', '期待', '失望', '满足', '孤独', '亲密', '迷茫', '疲惫']
   allEmotions.forEach(emotion => {
     if (scores[emotion] === undefined) {
-      scores[emotion] = 5  // 未识别的情绪给一个较低的默认值
+      scores[emotion] = 0  // 未识别的情绪默认为0，不是5
     }
   })
   
@@ -403,9 +403,83 @@ function buildFallbackResult(content) {
 }
 
 // 智能模式识别 - 根据文本模式推断情绪（已优化分数逻辑）
+// 问题1：否定词列表
+const NEGATION_WORDS = ['不', '没', '没有', '不是', '不会', '不能', '不太', '不太', '都不', '都没', '并非', '非', '无', '别']
+
+// 检查否定：返回 true 表示有否定
+function hasNegation(content, keyword, maxDistance = 5) {
+  const lowerContent = content.toLowerCase()
+  const keywordIndex = lowerContent.indexOf(keyword)
+  if (keywordIndex === -1) return false
+  
+  // 检查关键词前面 maxDistance 个字符内是否有否定词
+  const startPos = Math.max(0, keywordIndex - maxDistance)
+  const prefix = lowerContent.slice(startPos, keywordIndex)
+  
+  for (const neg of NEGATION_WORDS) {
+    if (prefix.includes(neg)) return true
+  }
+  return false
+}
+
+// 问题3：程度词处理（衰减系数）
+function getIntensityMultiplier(content, keyword) {
+  const lowerContent = content.toLowerCase()
+  const keywordIndex = lowerContent.indexOf(keyword)
+  if (keywordIndex === -1) return 1
+  
+  // 获取关键词前面的词
+  const prefix = lowerContent.slice(Math.max(0, keywordIndex - 30), keywordIndex)
+  
+  // 程度词及基础倍数
+  const intensityLevels = [
+    { words: ['非常非常非常', '极其', '相当', '特别特别'], base: 3.5, decay: 0.4 },
+    { words: ['非常非常', '特别特别', '极其极其'], base: 2.5, decay: 0.6 },
+    { words: ['非常', '特别', '极其', '相当', '太', '好', '好很', '十分', '极为'], base: 1.8, decay: 0.7 },
+    { words: ['比较', '挺', '蛮', '较', '有点', '有些'], base: 1.3, decay: 0.85 },
+    { words: ['稍微', '略微', '稍稍', '略'], base: 0.8, decay: 0.95 }
+  ]
+  
+  for (const level of intensityLevels) {
+    for (const word of level.words) {
+      if (prefix.includes(word)) {
+        return level.base
+      }
+    }
+  }
+  return 1  // 默认平淡
+}
+
 function analyzeByPatterns(content) {
   const scores = {}
   const lowerContent = content.toLowerCase()
+  
+  // ========== 否定词处理（问题1）==========
+  // 负面情绪的否定词（高兴->不悲伤，开心->不悲伤）
+  const negativeEmotionNegations = [
+    { keywords: ['高兴', '开心', '快乐', '幸福', '满足', '兴奋', '愉快'], emotion: '快乐', inverse: true },
+    { keywords: ['难过', '伤心', '悲伤', '痛苦', '郁闷'], emotion: '悲伤', inverse: true },
+    { keywords: ['生气', '愤怒', '恼火', '气愤'], emotion: '愤怒', inverse: true },
+    { keywords: ['害怕', '恐惧', '担心', '怕'], emotion: '恐惧', inverse: true },
+    { keywords: ['焦虑', '担忧', '着急', '发愁'], emotion: '焦虑', inverse: true },
+    { keywords: ['孤独', '寂寞', '孤单'], emotion: '孤独', inverse: true },
+    { keywords: ['迷茫', '困惑', '茫然'], emotion: '迷茫', inverse: true },
+    { keywords: ['累', '困', '疲惫', '疲倦'], emotion: '疲惫', inverse: true }
+  ]
+  
+  // 检查否定词：如果有"不+情绪"，扣分对应情绪，增加相反情绪
+  for (const item of negativeEmotionNegations) {
+    for (const keyword of item.keywords) {
+      if (lowerContent.includes(keyword)) {
+        if (hasNegation(content, keyword)) {
+          // 问题1核心："不+情绪" = 降低该情绪 -> 增加"平静"
+          console.log(`🔧 [DEBUG] 检测到否定：${keyword} -> 降低${item.emotion}`)
+          addScore(scores, item.emotion, -30)  // 负向情绪
+          addScore(scores, '平静', 25)  // 平静增加
+        }
+      }
+    }
+  }
   
   // 工作相关负面事件 - 权重较高
   if (/被老板|被领导|被主管|被上级|工作被骂|被批评|被指责|被怪罪|加班/.test(lowerContent)) {
@@ -486,10 +560,31 @@ function analyzeByPatterns(content) {
   return scores
 }
 
-// 辅助函数：安全添加分数
-function addScore(scores, emotion, points) {
+// 辅助函数：安全添加分数（集成问题3：程度词处理）
+function addScore(scores, emotion, points, context = '') {
+  let finalPoints = points
+  
+  // 只有加分时才考虑程度词（问题3）
+  if (points > 0 && context) {
+    const multiplier = getIntensityMultiplier(context, extractKeywordFromEmotion(emotion, context))
+    finalPoints = Math.round(points * multiplier)
+    console.log(`🔧 [DEBUG] 程度词处理: ${emotion} 原始${points} * ${multiplier} = ${finalPoints}`)
+  }
+  
   const current = scores[emotion] || 0
-  scores[emotion] = Math.min(100, current + points)
+  scores[emotion] = Math.min(100, Math.max(0, current + finalPoints))
+}
+
+// 从文本中提取与情绪相关的关键词
+function extractKeywordFromEmotion(emotion, content) {
+  const emotionKeywords = EMOTION_KEYWORDS[emotion] || []
+  const lowerContent = content.toLowerCase()
+  for (const keyword of emotionKeywords) {
+    if (lowerContent.includes(keyword)) {
+      return keyword
+    }
+  }
+  return ''
 }
 
 // 根据情绪生成差异化回应的核心函数
